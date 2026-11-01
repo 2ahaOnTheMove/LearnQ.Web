@@ -1,0 +1,15 @@
+@using LearnQ.Presentation.Navigation
+
+<AuthorizeView>
+    <Authorized context="user">
+        <NavLink class="btn btn-primary" href="@GetDestination(user.User)">@NavigationCatalog.DashboardLabel</NavLink>
+    </Authorized>
+    <NotAuthorized>
+        <NavLink class="btn btn-primary" href="@NavigationCatalog.GetStartedHref">@NavigationCatalog.GetStartedLabel</NavLink>
+    </NotAuthorized>
+</AuthorizeView>
+
+@code {
+    private static string GetDestination(ClaimsPrincipal user) =>
+        PostAuthRoute.GetPostAuthDestination(user);
+}

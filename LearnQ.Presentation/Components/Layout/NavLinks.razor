@@ -1,0 +1,71 @@
+@using LearnQ.Presentation.Navigation
+@inject IAuthorizationService AuthorizationService
+@inject Task<AuthenticationState> AuthenticationStateTask
+
+@if (_visibleItems is not null && _visibleItems.Count > 0)
+{
+    switch (Placement)
+    {
+        case NavLinksPlacement.Desktop:
+            <ul class="navbar-nav">
+                @foreach (var item in _visibleItems)
+                {
+                    <li class="nav-item">
+                        @if (item.External)
+                        {
+                            <a class="nav-link px-2 py-2" href="@item.Href" target="_blank" rel="noopener noreferrer">
+                                @item.Label
+                                <span class="visually-hidden">(opens in a new tab)</span>
+                            </a>
+                        }
+                        else
+                        {
+                            <NavLink class="nav-link px-2 py-2" href="@item.Href" Match="@item.Match">
+                                @item.Label
+                            </NavLink>
+                        }
+                    </li>
+                }
+            </ul>
+            break;
+
+        case NavLinksPlacement.Offcanvas:
+            <ul class="nav flex-column">
+                @foreach (var item in _visibleItems)
+                {
+                    <li class="nav-item">
+                        @if (item.External)
+                        {
+                            <a class="nav-link px-2 py-2 text-start" href="@item.Href" target="_blank" rel="noopener noreferrer">
+                                @item.Label
+                                <span class="visually-hidden">(opens in a new tab)</span>
+                            </a>
+                        }
+                        else
+                        {
+                            <NavLink class="nav-link px-2 py-2 text-start" href="@item.Href" Match="@item.Match">
+                                @item.Label
+                            </NavLink>
+                        }
+                    </li>
+                }
+            </ul>
+            break;
+    }
+}
+
+@code {
+    [Parameter]
+    [EditorRequired]
+    public NavLinksPlacement Placement { get; set; }
+
+    IReadOnlyList<NavigationItem>? _visibleItems;
+
+    protected override async Task OnInitializedAsync()
+    {
+        var authState = await AuthenticationStateTask;
+        var isAuthenticated = authState.User.Identity?.IsAuthenticated == true;
+        _visibleItems = await NavigationCatalog.FilterVisibleItemsAsync(
+            NavigationCatalog.MainItems, isAuthenticated, AuthorizationService);
+    }
+}

@@ -1,0 +1,61 @@
+@using LearnQ.Presentation.Routing
+
+@* 
+    BrandLogo — renders the LearnQ brand logo as an <img> with explicit dimensions.
+    Uses @Assets[] for fingerprinted URLs. Never stretches the image: height is set,
+    width follows from the aspect ratio.
+*@
+
+@if (Link)
+{
+    <a href="@AppRoutes.Home" class="navbar-brand text-decoration-none" aria-label="@AccessibleLabel">
+        <img src="@AssetUrl" width="@Width" height="@Height" alt="@AltText" class="d-inline-block" />
+    </a>
+}
+else
+{
+    <img src="@AssetUrl" width="@Width" height="@Height" alt="@AltText" class="d-inline-block" />
+}
+
+@code {
+    /// <summary>
+    /// Which logo variant to display. Default is the full lockup for light backgrounds.
+    /// </summary>
+    [Parameter, EditorRequired] public BrandLogoVariant Variant { get; set; } = BrandLogoVariant.Full;
+
+    /// <summary>
+    /// Height in pixels. Default is 28px (navbar size). Minimum: 20px for Full, 16px for Mark.
+    /// </summary>
+    [Parameter] public int Height { get; set; } = 28;
+
+    /// <summary>
+    /// When true, wrap the logo in a link to the home page.
+    /// </summary>
+    [Parameter] public bool Link { get; set; }
+
+    /// <summary>
+    /// When true, the logo is decorative (alt=""). Use when it sits next to visible "LearnQ" text.
+    /// </summary>
+    [Parameter] public bool Decorative { get; set; }
+
+    private string AssetUrl => Variant switch
+    {
+        BrandLogoVariant.Full => @Assets[BrandAssets.LogoPath],
+        BrandLogoVariant.FullWhite => @Assets[BrandAssets.LogoWhitePath],
+        BrandLogoVariant.Mark => @Assets[BrandAssets.MarkPath],
+        _ => @Assets[BrandAssets.LogoPath]
+    };
+
+    private int Width
+    {
+        get
+        {
+            var ratio = Variant == BrandLogoVariant.Mark ? BrandAssets.MarkAspectRatio : BrandAssets.LogoAspectRatio;
+            return (int)Math.Round(Height * ratio);
+        }
+    }
+
+    private string AltText => Decorative ? "" : BrandAssets.AppName;
+
+    private string AccessibleLabel => Decorative ? BrandAssets.AppName : $"{BrandAssets.AppName} home";
+}

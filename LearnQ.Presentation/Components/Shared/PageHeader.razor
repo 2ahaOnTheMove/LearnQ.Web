@@ -1,0 +1,12 @@
+<div class="mb-3 mb-md-4">
+    <h1 class="fs-4 fs-md-3 fw-semibold mb-1">@Title</h1>
+    @if (!string.IsNullOrWhiteSpace(Subtitle))
+    {
+        <p class="text-body-secondary mb-0">@Subtitle</p>
+    }
+</div>
+
+@code {
+    [Parameter, EditorRequired] public string Title { get; set; } = default!;
+    [Parameter] public string? Subtitle { get; set; }
+}

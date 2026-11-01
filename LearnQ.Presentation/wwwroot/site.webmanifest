@@ -1,0 +1,22 @@
+{
+  "name": "LearnQ",
+  "short_name": "LearnQ",
+  "start_url": "/",
+  "display": "standalone",
+  "theme_color": "#047857",
+  "background_color": "#FFFFFF",
+  "icons": [
+    {
+      "src": "brand/learnq-icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    },
+    {
+      "src": "brand/learnq-icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "maskable"
+    }
+  ]
+}

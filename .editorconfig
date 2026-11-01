@@ -1,0 +1,13 @@
+root = true
+
+[*.cs]
+dotnet_style_namespace_match_folder = true:suggestion
+dotnet_style_require_accessibility_modifiers = never:suggestion
+dotnet_style_prefer_file_scoped_namespace = true:suggestion
+ide_suggest_suppress = true
+dotnet_diagnostic.IDE0130.severity = warning
+dotnet_diagnostic.IDE0005.severity = warning
+dotnet_diagnostic.IDE0003.severity = warning
+
+[*.razor]
+dotnet_diagnostic.IDE0005.severity = warning
