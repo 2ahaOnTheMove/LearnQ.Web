@@ -12,7 +12,7 @@ internal sealed class ClientApi(HttpClient http) : IClientApi
     {
         try
         {
-            using var response = await http.PostAsJsonAsync("api/clients/register", request, ct);
+            using var response = await http.PostAsJsonAsync("api/clients/register", request, JsonSerializerDefaults.Options, ct);
 
             if (response.IsSuccessStatusCode)
                 return Result.Success();
