@@ -1,0 +1,11 @@
+/Users/2aha-codes/DreamProject/LearnQ.Web/LearnQ.Application/bin/Debug/net10.0/LearnQ.Application.deps.json
+/Users/2aha-codes/DreamProject/LearnQ.Web/LearnQ.Application/bin/Debug/net10.0/LearnQ.Application.dll
+/Users/2aha-codes/DreamProject/LearnQ.Web/LearnQ.Application/bin/Debug/net10.0/LearnQ.Application.pdb
+/Users/2aha-codes/DreamProject/LearnQ.Web/LearnQ.Application/obj/Debug/net10.0/LearnQ.Application.GeneratedMSBuildEditorConfig.editorconfig
+/Users/2aha-codes/DreamProject/LearnQ.Web/LearnQ.Application/obj/Debug/net10.0/LearnQ.Application.AssemblyInfoInputs.cache
+/Users/2aha-codes/DreamProject/LearnQ.Web/LearnQ.Application/obj/Debug/net10.0/LearnQ.Application.AssemblyInfo.cs
+/Users/2aha-codes/DreamProject/LearnQ.Web/LearnQ.Application/obj/Debug/net10.0/LearnQ.Application.csproj.CoreCompileInputs.cache
+/Users/2aha-codes/DreamProject/LearnQ.Web/LearnQ.Application/obj/Debug/net10.0/LearnQ.Application.dll
+/Users/2aha-codes/DreamProject/LearnQ.Web/LearnQ.Application/obj/Debug/net10.0/refint/LearnQ.Application.dll
+/Users/2aha-codes/DreamProject/LearnQ.Web/LearnQ.Application/obj/Debug/net10.0/LearnQ.Application.pdb
+/Users/2aha-codes/DreamProject/LearnQ.Web/LearnQ.Application/obj/Debug/net10.0/ref/LearnQ.Application.dll

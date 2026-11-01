@@ -1,0 +1,14 @@
+<div class="@Class">
+    <div class="form-check">
+        @ChildContent
+        <label for="@For.GetFieldName()" class="form-check-label">@Label</label>
+        <ValidationMessage For="For" class="invalid-feedback d-block" />
+    </div>
+</div>
+
+@code {
+    [Parameter, EditorRequired] public RenderFragment Label { get; set; } = default!;
+    [Parameter, EditorRequired] public System.Linq.Expressions.Expression<Func<bool>> For { get; set; } = default!;
+    [Parameter] public string Class { get; set; } = "mb-3";
+    [Parameter] public RenderFragment? ChildContent { get; set; }
+}

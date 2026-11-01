@@ -1,0 +1,14 @@
+@typeparam TValue
+
+<div class="@Class">
+    <label for="@For.GetFieldName()" class="form-label">@Label</label>
+    @ChildContent
+    <ValidationMessage For="For" class="invalid-feedback d-block" />
+</div>
+
+@code {
+    [Parameter, EditorRequired] public string Label { get; set; } = "";
+    [Parameter, EditorRequired] public System.Linq.Expressions.Expression<Func<TValue>> For { get; set; } = default!;
+    [Parameter] public string Class { get; set; } = "mb-3";
+    [Parameter] public RenderFragment? ChildContent { get; set; }
+}

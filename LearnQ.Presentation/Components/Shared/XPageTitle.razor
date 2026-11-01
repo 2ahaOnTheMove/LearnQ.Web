@@ -1,0 +1,11 @@
+<PageTitle>@FullTitle</PageTitle>
+
+@code {
+    private const string AppName = "LearnQ";
+
+    [Parameter, EditorRequired]
+    public string Name { get; set; } = string.Empty;
+
+    private string FullTitle =>
+        string.IsNullOrWhiteSpace(Name) ? AppName : $"{AppName} | {Name}";
+}

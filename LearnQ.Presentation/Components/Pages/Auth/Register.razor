@@ -1,0 +1,37 @@
+@page "/auth/register"
+@layout AuthLayout
+@inject NavigationManager Navigation
+@inject IClientApi Api
+
+<XPageTitle Name="Sign Up" />
+
+<div class="text-center mb-4">
+    <h1 class="h3 mb-1">Create your account</h1>
+    <p class="text-body-secondary mb-0">Start learning with LearnQ</p>
+</div>
+
+<RegisterForm OnSubmit="HandleRegister" ErrorMessage="@error" />
+
+@code {
+    private string? error;
+
+    private async Task HandleRegister(RegisterInput input)
+    {
+        var result = await Api.RegisterAsync(new RegisterClientRequest(
+            input.GivenName, 
+            input.FamilyName, 
+            input.DisplayName, 
+            input.Email, 
+            input.Password, 
+            input.TermsAccepted, 
+            input.PrivacyAccepted));
+
+        if (result.IsFailure)
+        {
+            error = result.Error;
+            return;
+        }
+
+        Navigation.NavigateTo("/onboarding");
+    }
+}

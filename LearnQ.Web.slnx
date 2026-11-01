@@ -1,0 +1,5 @@
+<Solution>
+  <Project Path="LearnQ.Application/LearnQ.Application.csproj" />
+  <Project Path="LearnQ.Infrastructure/LearnQ.Infrastructure.csproj" />
+  <Project Path="LearnQ.Presentation/LearnQ.Presentation.csproj" />
+</Solution>

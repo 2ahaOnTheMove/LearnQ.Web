@@ -1,0 +1,67 @@
+<EditForm Model="Model" FormName="register" OnValidSubmit="HandleValidSubmit" Enhance novalidate>
+    <DataAnnotationsValidator />
+    <BootstrapValidation />
+
+    @if (ErrorMessage is not null)
+    {
+        <div class="alert alert-danger" role="alert">@ErrorMessage</div>
+    }
+
+    <div class="row">
+        <FormField Class="col-md-6 mb-3" Label="First name" For="() => Model.GivenName">
+            <InputText id="GivenName" @bind-Value="Model.GivenName" autocomplete="given-name" class="form-control" />
+        </FormField>
+
+        <FormField Class="col-md-6 mb-3" Label="Last name" For="() => Model.FamilyName">
+            <InputText id="FamilyName" @bind-Value="Model.FamilyName" autocomplete="family-name" class="form-control" />
+        </FormField>
+    </div>
+
+    <FormField Label="Username" For="() => Model.DisplayName">
+        <InputText id="DisplayName" @bind-Value="Model.DisplayName" autocomplete="username" class="form-control" />
+    </FormField>
+
+    <FormField Label="Email" For="() => Model.Email">
+        <InputText id="Email" type="email" @bind-Value="Model.Email" autocomplete="email" class="form-control" />
+    </FormField>
+
+    <div class="row">
+        <FormField Class="col-md-6 mb-3" Label="Password" For="() => Model.Password">
+            <InputText id="Password" type="password" @bind-Value="Model.Password" autocomplete="new-password" class="form-control" />
+        </FormField>
+
+        <FormField Class="col-md-6 mb-3" Label="Confirm password" For="() => Model.ConfirmPassword">
+            <InputText id="ConfirmPassword" type="password" @bind-Value="Model.ConfirmPassword" autocomplete="new-password" class="form-control" />
+        </FormField>
+    </div>
+
+    <FormCheck For="() => Model.TermsAccepted">
+        <Label>I accept the <a href="/terms" target="_blank">Terms of Service</a></Label>
+        <ChildContent>
+            <InputCheckbox id="TermsAccepted" class="form-check-input" @bind-Value="Model.TermsAccepted" />
+        </ChildContent>
+    </FormCheck>
+
+    <FormCheck For="() => Model.PrivacyAccepted">
+        <Label>I accept the <a href="/privacy" target="_blank">Privacy Policy</a></Label>
+        <ChildContent>
+            <InputCheckbox id="PrivacyAccepted" class="form-check-input" @bind-Value="Model.PrivacyAccepted" />
+        </ChildContent>
+    </FormCheck>
+
+    <button class="btn btn-dark w-100" type="submit">Create account</button>
+</EditForm>
+
+<p class="text-center text-body-secondary mt-3 mb-0">
+    Already have an account? <a href="/auth/login">Sign in</a>
+</p>
+
+@code {
+    [SupplyParameterFromForm]
+    private RegisterInput Model { get; set; } = new();
+
+    [Parameter] public EventCallback<RegisterInput> OnSubmit { get; set; }
+    [Parameter] public string? ErrorMessage { get; set; }
+
+    private Task HandleValidSubmit() => OnSubmit.InvokeAsync(Model);
+}

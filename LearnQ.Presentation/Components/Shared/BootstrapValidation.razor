@@ -1,0 +1,6 @@
+@code {
+    [CascadingParameter] private EditContext? EditContext { get; set; }
+
+    protected override void OnInitialized() =>
+        EditContext?.SetFieldCssClassProvider(new BootstrapFieldCssClassProvider());
+}
