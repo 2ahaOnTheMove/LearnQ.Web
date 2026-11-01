@@ -9,11 +9,19 @@
                        IsSubmitting="@_isSubmitting" />
 
 @code {
+    [CascadingParameter]
+    private HttpContext? HttpContext { get; set; }
+
     private ApiError? _apiError;
     private bool _isSubmitting;
 
     protected override async Task OnInitializedAsync()
     {
+        if (OnboardingRoute.ShouldSkipGuard(HttpContext))
+        {
+            return;
+        }
+
         var statusResult = await OnboardingApi.GetStatusAsync();
         if (statusResult.IsSuccess && statusResult.Value is not null)
         {

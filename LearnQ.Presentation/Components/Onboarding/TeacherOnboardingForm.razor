@@ -99,16 +99,8 @@
         <a href="@AppRoutes.OnboardingRole" class="btn btn-link text-decoration-none text-muted" disabled="@IsSubmitting">
             Back to role
         </a>
-        <button type="submit" class="btn btn-primary px-4" disabled="@(IsSubmitting || _isUploading)">
-            @if (IsSubmitting)
-            {
-                <span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
-                <span>Saving profile...</span>
-            }
-            else
-            {
-                <span>Complete teacher profile</span>
-            }
+        <button type="submit" class="btn btn-primary px-4" disabled="@IsSubmitting">
+            <span>Complete teacher profile</span>
         </button>
     </div>
 </EditForm>
