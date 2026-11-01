@@ -1,5 +1,63 @@
 @attribute [Route(AppRoutes.Login)]
+@attribute [AllowAnonymous]
+@attribute [EnableRateLimiting("login")]
+@using Microsoft.AspNetCore.RateLimiting
+@inject IAuthService AuthService
+@inject NavigationManager Navigation
 
 <XPageTitle Name="Sign In" />
-<p>login page</p>
-<p>Need an account? <NavLink href="@AppRoutes.Register">Register</NavLink> here.</p>
+
+<LoginForm OnSubmit="HandleLogin"
+           ErrorMessage="@_errorMessage"
+           IsSubmitting="@_isSubmitting" />
+
+@code {
+    [CascadingParameter]
+    private HttpContext? HttpContext { get; set; }
+
+    [SupplyParameterFromQuery]
+    private string? ReturnUrl { get; set; }
+
+    private string? _errorMessage;
+    private bool _isSubmitting;
+
+    protected override void OnInitialized()
+    {
+        if (HttpContext is not null && !HttpMethods.IsPost(HttpContext.Request.Method))
+        {
+            if (HttpContext.User.Identity?.IsAuthenticated == true)
+            {
+                var destination = PostAuthRoute.GetPostAuthDestination(HttpContext.User, ReturnUrl);
+                Navigation.NavigateTo(destination);
+            }
+        }
+    }
+
+    private async Task HandleLogin(LoginInput input)
+    {
+        if (HttpContext is null)
+        {
+            return;
+        }
+
+        _errorMessage = null;
+        _isSubmitting = true;
+
+        var result = await AuthService.SignInAsync(
+            input.Identifier,
+            input.Password,
+            input.RememberMe,
+            HttpContext);
+
+        _isSubmitting = false;
+
+        if (result.IsFailure || result.Value is null)
+        {
+            _errorMessage = "Invalid email/username or password.";
+            return;
+        }
+
+        var destination = PostAuthRoute.GetPostAuthDestination(result.Value, ReturnUrl);
+        Navigation.NavigateTo(destination);
+    }
+}

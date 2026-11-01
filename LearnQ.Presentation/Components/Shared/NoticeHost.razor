@@ -1,0 +1,35 @@
+@using LearnQ.Presentation.Security
+@inject NavigationManager Navigation
+
+@code {
+    [CascadingParameter]
+    private HttpContext? HttpContext { get; set; }
+
+    private (string Title, string Message)? _notice;
+    private string _closeHref = "#";
+
+    protected override void OnParametersSet()
+    {
+        _notice = null;
+        if (HttpContext is not null)
+        {
+            var noticeKey = HttpContext.Request.Query["notice"].ToString();
+            if (NoticeKeys.TryGetNotice(noticeKey, out var notice))
+            {
+                _notice = notice;
+                var queryParams = HttpContext.Request.Query
+                    .Where(q => !string.Equals(q.Key, "notice", StringComparison.OrdinalIgnoreCase))
+                    .Select(q => $"{Uri.EscapeDataString(q.Key)}={Uri.EscapeDataString(q.Value.ToString())}");
+                var qs = string.Join("&", queryParams);
+                _closeHref = string.IsNullOrEmpty(qs)
+                    ? HttpContext.Request.Path.Value ?? "/"
+                    : $"{HttpContext.Request.Path.Value}?{qs}";
+            }
+        }
+    }
+}
+
+@if (_notice.HasValue)
+{
+    <NoticeModal Title="@_notice.Value.Title" Message="@_notice.Value.Message" CloseHref="@_closeHref" />
+}

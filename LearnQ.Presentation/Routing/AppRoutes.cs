@@ -13,6 +13,9 @@ public static class AppRoutes
     public const string Privacy = "/privacy";
     public const string Login = "/auth/login";
     public const string Register = "/auth/register";
+    public const string VerifyEmail = "/auth/verify-email";
+    public const string Logout = "/auth/logout";
+    public const string AccessDenied = "/access-denied";
     public const string NotFound = "/not-found";
     public const string Error = "/error";
 }

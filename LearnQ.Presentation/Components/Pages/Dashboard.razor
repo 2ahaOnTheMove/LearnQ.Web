@@ -1,4 +1,5 @@
 @attribute [Route(AppRoutes.Dashboard)]
+@attribute [Authorize(Policy = AuthPolicies.OnboardingCompleted)]
 
 <XPageTitle Name="Dashboard" />
 

@@ -1,5 +1,7 @@
 @attribute [Route(AppRoutes.OnboardingTeacher)]
+@attribute [Authorize(Policy = AuthPolicies.TeacherOnly)]
 @inject IOnboardingApi OnboardingApi
+@inject IAuthService AuthService
 @inject NavigationManager Navigation
 
 <XPageTitle Name="Teacher Onboarding" />
@@ -60,6 +62,11 @@
         {
             _apiError = result.Error;
             return;
+        }
+
+        if (HttpContext is not null)
+        {
+            await AuthService.RefreshPrincipalAsync(HttpContext);
         }
 
         Navigation.NavigateTo(AppRoutes.OnboardingStatus);

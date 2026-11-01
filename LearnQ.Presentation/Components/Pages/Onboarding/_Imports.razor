@@ -1,8 +1,8 @@
 @layout OnboardingLayout
+@attribute [Authorize(Policy = AuthPolicies.EmailVerified)]
 @using LearnQ.Application.Common.Constants
 @using LearnQ.Application.Common.Enums
 @using LearnQ.Application.Common.Interfaces
 @using LearnQ.Application.Features.Onboarding
 @using LearnQ.Presentation.Components.Onboarding
-
-@* TODO: Add @attribute [Authorize] once authentication services and middleware are configured. *@
+@using LearnQ.Presentation.Security

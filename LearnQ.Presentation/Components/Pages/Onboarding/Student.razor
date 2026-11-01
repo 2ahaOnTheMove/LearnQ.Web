@@ -1,7 +1,9 @@
 @attribute [Route(AppRoutes.OnboardingStudent)]
+@attribute [Authorize(Policy = AuthPolicies.StudentOnly)]
 @using static Microsoft.AspNetCore.Components.Web.RenderMode
 @rendermode InteractiveServer
 @inject IOnboardingApi OnboardingApi
+@inject IAuthService AuthService
 @inject NavigationManager Navigation
 
 <XPageTitle Name="Student Onboarding" />
@@ -398,6 +400,7 @@ else if (_model.ForSelf == false)
             return;
         }
 
+        await AuthService.RefreshPrincipalAsync();
         Navigation.NavigateTo(AppRoutes.Dashboard);
     }
 
@@ -500,6 +503,7 @@ else if (_model.ForSelf == false)
             return;
         }
 
+        await AuthService.RefreshPrincipalAsync();
         Navigation.NavigateTo(AppRoutes.Dashboard);
     }
 }

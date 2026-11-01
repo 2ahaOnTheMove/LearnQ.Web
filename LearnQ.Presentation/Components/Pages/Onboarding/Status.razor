@@ -1,4 +1,5 @@
 @attribute [Route(AppRoutes.OnboardingStatus)]
+@attribute [Authorize(Policy = AuthPolicies.TeacherOnly)]
 
 <XPageTitle Name="Profile Under Review" />
 

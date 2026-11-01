@@ -1,0 +1,101 @@
+@attribute [Route(AppRoutes.VerifyEmail)]
+@attribute [Authorize(Policy = AuthPolicies.AuthenticatedOnly)]
+@attribute [EnableRateLimiting("verify-email")]
+@using Microsoft.AspNetCore.RateLimiting
+@inject IAuthApi AuthApi
+@inject IAuthService AuthService
+@inject NavigationManager Navigation
+
+<XPageTitle Name="Verify Email" />
+
+<VerifyEmailForm OnSubmit="HandleVerify"
+                 ErrorMessage="@_errorMessage"
+                 SuccessMessage="@_successMessage"
+                 ResendCooldownSeconds="@_resendCooldownSeconds"
+                 IsSubmitting="@_isSubmitting" />
+
+@code {
+    [CascadingParameter]
+    private HttpContext? HttpContext { get; set; }
+
+    [SupplyParameterFromQuery]
+    private string? Action { get; set; }
+
+    [SupplyParameterFromQuery]
+    private string? ReturnUrl { get; set; }
+
+    private string? _errorMessage;
+    private string? _successMessage;
+    private int _resendCooldownSeconds;
+    private bool _isSubmitting;
+
+    protected override async Task OnInitializedAsync()
+    {
+        if (HttpContext is not null && HttpMethods.IsPost(HttpContext.Request.Method))
+        {
+            if (string.Equals(Action, "resend", StringComparison.OrdinalIgnoreCase))
+            {
+                await HandleResend();
+                return;
+            }
+        }
+
+        if (HttpContext is not null && !HttpMethods.IsPost(HttpContext.Request.Method))
+        {
+            var isVerified = HttpContext.User.FindFirst(AppClaims.EmailVerified)?.Value == "true";
+            if (isVerified)
+            {
+                var destination = PostAuthRoute.GetPostAuthDestination(HttpContext.User, ReturnUrl);
+                Navigation.NavigateTo(destination);
+            }
+        }
+    }
+
+    private async Task HandleVerify(VerifyEmailInput input)
+    {
+        _errorMessage = null;
+        _successMessage = null;
+        _isSubmitting = true;
+
+        var result = await AuthApi.VerifyEmailAsync(new VerifyEmailRequest(input.Code));
+        if (result.IsFailure)
+        {
+            _isSubmitting = false;
+            _errorMessage = result.Error?.Message ?? "Invalid or expired verification code.";
+            return;
+        }
+
+        if (HttpContext is not null)
+        {
+            var refreshResult = await AuthService.RefreshPrincipalAsync(HttpContext);
+            if (refreshResult.IsSuccess && refreshResult.Value is not null)
+            {
+                var destination = PostAuthRoute.GetPostAuthDestination(refreshResult.Value, ReturnUrl);
+                Navigation.NavigateTo(destination);
+                return;
+            }
+        }
+
+        Navigation.NavigateTo(AppRoutes.Onboarding);
+    }
+
+    private async Task HandleResend()
+    {
+        _errorMessage = null;
+        _successMessage = null;
+        _isSubmitting = true;
+
+        var result = await AuthApi.ResendVerificationAsync();
+        _isSubmitting = false;
+
+        if (result.IsSuccess && result.Value is not null)
+        {
+            _resendCooldownSeconds = result.Value.RetryAfterSeconds;
+            _successMessage = "A fresh verification code has been sent to your email.";
+        }
+        else
+        {
+            _errorMessage = result.Error?.Message ?? "Unable to resend code right now. Please wait before retrying.";
+        }
+    }
+}

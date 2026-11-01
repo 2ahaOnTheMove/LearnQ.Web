@@ -1,5 +1,6 @@
 @attribute [Route(AppRoutes.OnboardingRole)]
 @inject IOnboardingApi OnboardingApi
+@inject IAuthService AuthService
 @inject NavigationManager Navigation
 
 <XPageTitle Name="Choose Role" />
@@ -53,6 +54,11 @@
         {
             _apiError = result.Error;
             return;
+        }
+
+        if (HttpContext is not null)
+        {
+            await AuthService.RefreshPrincipalAsync(HttpContext);
         }
 
         var destination = input.Role.Value == UserRole.Student

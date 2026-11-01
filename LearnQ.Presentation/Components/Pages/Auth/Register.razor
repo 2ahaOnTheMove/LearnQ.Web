@@ -1,12 +1,29 @@
 @attribute [Route(AppRoutes.Register)]
+@attribute [AllowAnonymous]
 @inject IClientApi Api
+@inject IAuthService AuthService
 @inject NavigationManager Navigation
 
 <XPageTitle Name="Sign Up" />
 <RegisterForm OnSubmit="HandleRegister" Error="@_apiError" />
 
 @code {
+    [CascadingParameter]
+    private HttpContext? HttpContext { get; set; }
+
     private ApiError? _apiError;
+
+    protected override void OnInitialized()
+    {
+        if (HttpContext is not null && !HttpMethods.IsPost(HttpContext.Request.Method))
+        {
+            if (HttpContext.User.Identity?.IsAuthenticated == true)
+            {
+                var destination = PostAuthRoute.GetPostAuthDestination(HttpContext.User);
+                Navigation.NavigateTo(destination);
+            }
+        }
+    }
 
     private async Task HandleRegister(RegisterInput input)
     {
@@ -29,6 +46,22 @@
             return;
         }
 
-        Navigation.NavigateTo(AppRoutes.Onboarding);
+        if (HttpContext is not null)
+        {
+            var signInResult = await AuthService.SignInAsync(
+                input.Email,
+                input.Password,
+                false,
+                HttpContext);
+
+            if (signInResult.IsSuccess && signInResult.Value is not null)
+            {
+                var destination = PostAuthRoute.GetPostAuthDestination(signInResult.Value);
+                Navigation.NavigateTo(destination);
+                return;
+            }
+        }
+
+        Navigation.NavigateTo($"{AppRoutes.Login}?notice={NoticeKeys.Registered}");
     }
 }
