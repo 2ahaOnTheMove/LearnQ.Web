@@ -5,6 +5,6 @@ namespace LearnQ.Presentation.Components.Onboarding;
 
 public sealed class RoleSelectionInput
 {
-    [Required(ErrorMessage = "Please select whether you want to join as a Student or Teacher.")]
+    [Required(ErrorMessage = "Choose a role to continue.")]
     public UserRole? Role { get; set; }
 }

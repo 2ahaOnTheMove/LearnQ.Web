@@ -13,39 +13,27 @@
         <div class="alert alert-danger" role="alert">@DisplayErrorMessage</div>
     }
 
-    <div class="row g-3 mb-4">
-        <div class="col-12 col-md-6">
-            <label class="card h-100 p-3 role-card cursor-pointer border-2 @(Model.Role == UserRole.Student ? "border-primary bg-primary-subtle" : "border-secondary-subtle")"
-                   style="cursor: pointer;">
-                <div class="card-body text-center p-2">
-                    <input type="radio"
-                           name="role-option"
-                           class="form-check-input visually-hidden"
-                           checked="@(Model.Role == UserRole.Student)"
-                           @onchange="() => Model.Role = UserRole.Student" />
+    <InputRadioGroup @bind-Value="Model.Role">
+        <div class="row g-3 mb-4">
+            <div class="col-12 col-md-6">
+                <InputRadio Value="@UserRole.Student" class="btn-check" id="role-student" />
+                <label class="btn btn-outline-primary w-100 h-100 p-3 text-center" for="role-student">
                     <div class="fs-1 mb-2">🎓</div>
                     <h5 class="card-title fw-bold mb-1">Student</h5>
-                    <p class="card-text text-muted small mb-0">Learn for yourself or find qualified teachers for your family.</p>
-                </div>
-            </label>
-        </div>
+                    <p class="card-text small mb-0">Learn for yourself or find qualified teachers for your family.</p>
+                </label>
+            </div>
 
-        <div class="col-12 col-md-6">
-            <label class="card h-100 p-3 role-card cursor-pointer border-2 @(Model.Role == UserRole.Teacher ? "border-primary bg-primary-subtle" : "border-secondary-subtle")"
-                   style="cursor: pointer;">
-                <div class="card-body text-center p-2">
-                    <input type="radio"
-                           name="role-option"
-                           class="form-check-input visually-hidden"
-                           checked="@(Model.Role == UserRole.Teacher)"
-                           @onchange="() => Model.Role = UserRole.Teacher" />
+            <div class="col-12 col-md-6">
+                <InputRadio Value="@UserRole.Teacher" class="btn-check" id="role-teacher" />
+                <label class="btn btn-outline-primary w-100 h-100 p-3 text-center" for="role-teacher">
                     <div class="fs-1 mb-2">👩‍🏫</div>
                     <h5 class="card-title fw-bold mb-1">Teacher</h5>
-                    <p class="card-text text-muted small mb-0">Apply as an instructor, manage availability, and teach learners.</p>
-                </div>
-            </label>
+                    <p class="card-text small mb-0">Apply as an instructor, manage availability, and teach learners.</p>
+                </label>
+            </div>
         </div>
-    </div>
+    </InputRadioGroup>
 
     <div class="mb-3 text-center">
         <ValidationMessage For="@(() => Model.Role)" class="invalid-feedback d-block" />
@@ -53,15 +41,7 @@
 
     <div class="d-grid gap-2">
         <button type="submit" class="btn btn-primary btn-lg" disabled="@IsSubmitting">
-            @if (IsSubmitting)
-            {
-                <span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
-                <span>Saving...</span>
-            }
-            else
-            {
-                <span>Continue</span>
-            }
+            <span>Continue</span>
         </button>
         <a href="@AppRoutes.Home" class="btn btn-link text-decoration-none text-muted">Back to home</a>
     </div>
