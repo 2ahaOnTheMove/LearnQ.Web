@@ -1,10 +1,10 @@
-<EditForm Model="Model" FormName="register" OnValidSubmit="HandleValidSubmit" Enhance novalidate>
+<EditForm EditContext="_editContext" FormName="register" OnValidSubmit="HandleValidSubmit" Enhance novalidate>
     <DataAnnotationsValidator />
     <BootstrapValidation />
 
-    @if (ErrorMessage is not null)
+    @if (!string.IsNullOrWhiteSpace(DisplayErrorMessage))
     {
-        <div class="alert alert-danger" role="alert">@ErrorMessage</div>
+        <div class="alert alert-danger" role="alert">@DisplayErrorMessage</div>
     }
 
     <div class="row">
@@ -57,6 +57,10 @@
 </p>
 
 @code {
+    private EditContext _editContext = default!;
+    private ValidationMessageStore _messageStore = default!;
+    private RegisterInput? _previousModel;
+
     [SupplyParameterFromForm]
     public RegisterInput Model { get; set; } = default!;
 
@@ -64,9 +68,62 @@
     public EventCallback<RegisterInput> OnSubmit { get; set; }
 
     [Parameter]
+    public ApiError? Error { get; set; }
+
+    [Parameter]
     public string? ErrorMessage { get; set; }
 
-    protected override void OnInitialized() => Model ??= new();
+    [Parameter]
+    public IReadOnlyDictionary<string, string[]>? FieldErrors { get; set; }
+
+    private string? DisplayErrorMessage => ErrorMessage ?? Error?.Message;
+    private IReadOnlyDictionary<string, string[]>? EffectiveFieldErrors => FieldErrors ?? Error?.FieldErrors;
+
+    protected override void OnInitialized()
+    {
+        Model ??= new();
+        EnsureEditContext();
+    }
+
+    protected override void OnParametersSet()
+    {
+        Model ??= new();
+        EnsureEditContext();
+
+        ApplyServerErrors();
+    }
+
+    private void EnsureEditContext()
+    {
+        if (_editContext is null || !ReferenceEquals(Model, _previousModel))
+        {
+            _previousModel = Model;
+            _editContext = new EditContext(Model);
+            _messageStore = new ValidationMessageStore(_editContext);
+
+            _editContext.OnFieldChanged += (sender, args) =>
+            {
+                _messageStore.Clear(args.FieldIdentifier);
+                _editContext.NotifyValidationStateChanged();
+            };
+
+            _editContext.OnValidationRequested += (sender, args) =>
+            {
+                _messageStore.Clear();
+            };
+        }
+    }
+
+    public void ApplyServerErrors()
+    {
+        var errors = EffectiveFieldErrors;
+        if (errors is { Count: > 0 } && _messageStore is not null && _editContext is not null)
+        {
+            _messageStore.Clear();
+            _messageStore.AddFieldErrors(Model, errors);
+            _editContext.NotifyValidationStateChanged();
+        }
+    }
 
     private Task HandleValidSubmit() => OnSubmit.InvokeAsync(Model);
 }

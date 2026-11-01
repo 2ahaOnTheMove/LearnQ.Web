@@ -3,14 +3,14 @@
 @inject NavigationManager Navigation
 
 <XPageTitle Name="Sign Up" />
-<RegisterForm OnSubmit="HandleRegister" ErrorMessage="@_errorMessage" />
+<RegisterForm OnSubmit="HandleRegister" Error="@_apiError" />
 
 @code {
-    private string? _errorMessage;
+    private ApiError? _apiError;
 
     private async Task HandleRegister(RegisterInput input)
     {
-        _errorMessage = null;
+        _apiError = null;
 
         var request = new RegisterClientRequest(
             input.GivenName,
@@ -23,9 +23,9 @@
 
         var result = await Api.RegisterAsync(request);
 
-        if (!result.IsSuccess)
+        if (result.IsFailure)
         {
-            _errorMessage = result.Error;
+            _apiError = result.Error;
             return;
         }
 

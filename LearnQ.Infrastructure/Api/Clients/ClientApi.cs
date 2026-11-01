@@ -17,15 +17,12 @@ internal sealed class ClientApi(HttpClient http) : IClientApi
             if (response.IsSuccessStatusCode)
                 return Result.Success();
 
-            return Result.Failure(await ApiErrorReader.ReadErrorAsync(response, ct));
+            var error = await ApiErrorReader.ReadErrorAsync(response, ct);
+            return Result.Failure(error);
         }
-        catch (HttpRequestException)
+        catch (Exception ex) when (ex is HttpRequestException or TaskCanceledException)
         {
-            return Result.Failure("Can't reach the server. Please try again.");
-        }
-        catch (TaskCanceledException)
-        {
-            return Result.Failure("The request timed out. Please try again.");
+            return Result.Failure(ApiErrorReader.FromException(ex));
         }
     }
 }
