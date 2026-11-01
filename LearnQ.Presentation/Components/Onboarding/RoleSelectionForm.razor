@@ -1,0 +1,94 @@
+@using LearnQ.Application.Common.Enums
+
+<EditForm Model="Model" FormName="role-selection" OnValidSubmit="HandleValidSubmit" Enhance novalidate>
+    <DataAnnotationsValidator />
+
+    <div class="text-center mb-4">
+        <h2 class="h3 fw-bold mb-2">Choose your role</h2>
+        <p class="text-muted">Select how you would like to use LearnQ to get started.</p>
+    </div>
+
+    @if (!string.IsNullOrWhiteSpace(DisplayErrorMessage))
+    {
+        <div class="alert alert-danger" role="alert">@DisplayErrorMessage</div>
+    }
+
+    <div class="row g-3 mb-4">
+        <div class="col-12 col-md-6">
+            <label class="card h-100 p-3 role-card cursor-pointer border-2 @(Model.Role == UserRole.Student ? "border-primary bg-primary-subtle" : "border-secondary-subtle")"
+                   style="cursor: pointer;">
+                <div class="card-body text-center p-2">
+                    <input type="radio"
+                           name="role-option"
+                           class="form-check-input visually-hidden"
+                           checked="@(Model.Role == UserRole.Student)"
+                           @onchange="() => Model.Role = UserRole.Student" />
+                    <div class="fs-1 mb-2">🎓</div>
+                    <h5 class="card-title fw-bold mb-1">Student</h5>
+                    <p class="card-text text-muted small mb-0">Learn for yourself or find qualified teachers for your family.</p>
+                </div>
+            </label>
+        </div>
+
+        <div class="col-12 col-md-6">
+            <label class="card h-100 p-3 role-card cursor-pointer border-2 @(Model.Role == UserRole.Teacher ? "border-primary bg-primary-subtle" : "border-secondary-subtle")"
+                   style="cursor: pointer;">
+                <div class="card-body text-center p-2">
+                    <input type="radio"
+                           name="role-option"
+                           class="form-check-input visually-hidden"
+                           checked="@(Model.Role == UserRole.Teacher)"
+                           @onchange="() => Model.Role = UserRole.Teacher" />
+                    <div class="fs-1 mb-2">👩‍🏫</div>
+                    <h5 class="card-title fw-bold mb-1">Teacher</h5>
+                    <p class="card-text text-muted small mb-0">Apply as an instructor, manage availability, and teach learners.</p>
+                </div>
+            </label>
+        </div>
+    </div>
+
+    <div class="mb-3 text-center">
+        <ValidationMessage For="@(() => Model.Role)" class="invalid-feedback d-block" />
+    </div>
+
+    <div class="d-grid gap-2">
+        <button type="submit" class="btn btn-primary btn-lg" disabled="@IsSubmitting">
+            @if (IsSubmitting)
+            {
+                <span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
+                <span>Saving...</span>
+            }
+            else
+            {
+                <span>Continue</span>
+            }
+        </button>
+        <a href="@AppRoutes.Home" class="btn btn-link text-decoration-none text-muted">Back to home</a>
+    </div>
+</EditForm>
+
+@code {
+    [SupplyParameterFromForm]
+    public RoleSelectionInput Model { get; set; } = default!;
+
+    [Parameter, EditorRequired]
+    public EventCallback<RoleSelectionInput> OnSubmit { get; set; }
+
+    [Parameter]
+    public ApiError? Error { get; set; }
+
+    [Parameter]
+    public string? ErrorMessage { get; set; }
+
+    [Parameter]
+    public bool IsSubmitting { get; set; }
+
+    private string? DisplayErrorMessage => ErrorMessage ?? Error?.Message;
+
+    protected override void OnInitialized()
+    {
+        Model ??= new();
+    }
+
+    private Task HandleValidSubmit() => OnSubmit.InvokeAsync(Model);
+}

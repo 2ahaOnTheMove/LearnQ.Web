@@ -1,0 +1,52 @@
+@attribute [Route(AppRoutes.OnboardingRole)]
+@inject IOnboardingApi OnboardingApi
+@inject NavigationManager Navigation
+
+<XPageTitle Name="Choose Role" />
+
+<RoleSelectionForm OnSubmit="HandleRoleSelection"
+                   Error="@_apiError"
+                   IsSubmitting="@_isSubmitting" />
+
+@code {
+    private ApiError? _apiError;
+    private bool _isSubmitting;
+
+    protected override async Task OnInitializedAsync()
+    {
+        var statusResult = await OnboardingApi.GetStatusAsync();
+        if (statusResult.IsSuccess && statusResult.Value is not null)
+        {
+            var redirect = OnboardingRoute.GetGuardRedirect(statusResult.Value, AppRoutes.OnboardingRole);
+            if (redirect is not null)
+            {
+                Navigation.NavigateTo(redirect);
+            }
+        }
+    }
+
+    private async Task HandleRoleSelection(RoleSelectionInput input)
+    {
+        if (input.Role is null) return;
+
+        _apiError = null;
+        _isSubmitting = true;
+
+        var request = new SelectRoleRequest(input.Role.Value);
+        var result = await OnboardingApi.SelectRoleAsync(request);
+
+        _isSubmitting = false;
+
+        if (result.IsFailure)
+        {
+            _apiError = result.Error;
+            return;
+        }
+
+        var destination = input.Role.Value == UserRole.Student
+            ? AppRoutes.OnboardingStudent
+            : AppRoutes.OnboardingTeacher;
+
+        Navigation.NavigateTo(destination);
+    }
+}
