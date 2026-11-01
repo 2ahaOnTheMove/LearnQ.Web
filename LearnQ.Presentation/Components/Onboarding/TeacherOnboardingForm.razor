@@ -1,0 +1,191 @@
+@using LearnQ.Application.Common.Interfaces
+@using LearnQ.Application.Common.Models
+@inject ILanguageCatalog LanguageCatalog
+
+<EditForm EditContext="_editContext" FormName="teacher-onboarding" OnValidSubmit="HandleValidSubmit" Enhance novalidate>
+    <DataAnnotationsValidator />
+    <BootstrapValidation />
+
+    <div class="text-center mb-4">
+        <h2 class="h3 fw-bold mb-2">Teacher Profile Setup</h2>
+        <p class="text-muted">Tell us about your teaching experience and student preferences.</p>
+    </div>
+
+    @if (!string.IsNullOrWhiteSpace(DisplayErrorMessage))
+    {
+        <div class="alert alert-danger" role="alert">@DisplayErrorMessage</div>
+    }
+
+    <div class="mb-4">
+        <AvatarUpload Value="@Model.AvatarUrl"
+                      ValueChanged="@((url) => Model.AvatarUrl = url)"
+                      IsUploadingChanged="HandleUploadingChanged"
+                      Disabled="@IsSubmitting" />
+    </div>
+
+    <FormField Label="Professional headline" For="@(() => Model.Headline)" Class="mb-3">
+        <InputText @bind-Value="Model.Headline"
+                   class="form-control"
+                   placeholder="e.g. Certified Quran & Tajweed Instructor with 8 years experience"
+                   maxlength="100"
+                   disabled="@IsSubmitting" />
+    </FormField>
+
+    <FormField Label="Bio" For="@(() => Model.Bio)" Class="mb-3">
+        <InputTextArea @bind-Value="Model.Bio"
+                       class="form-control"
+                       rows="4"
+                       placeholder="Tell students about your background, qualifications, teaching style, and methodology (50-2000 characters)"
+                       maxlength="2000"
+                       disabled="@IsSubmitting" />
+        <div class="form-text text-end">@(2000 - (Model.Bio?.Length ?? 0)) characters remaining (minimum 50)</div>
+    </FormField>
+
+    <FormField Label="Introduction video URL (optional)" For="@(() => Model.IntroVideoUrl)" Class="mb-3">
+        <InputText @bind-Value="Model.IntroVideoUrl"
+                   class="form-control"
+                   placeholder="https://www.youtube.com/watch?v=..."
+                   disabled="@IsSubmitting" />
+        <div class="form-text">Must be an absolute HTTPS link (e.g. YouTube or Vimeo).</div>
+    </FormField>
+
+    <div class="row">
+        <FormField Label="Gender" For="@(() => Model.Gender)" Class="col-12 col-md-6 mb-3">
+            <EnumSelect @bind-Value="Model.Gender" Labels="EnumDisplayHelper.GenderLabels" Disabled="@IsSubmitting" />
+        </FormField>
+
+        <FormField Label="Years of experience" For="@(() => Model.YearsExperience)" Class="col-12 col-md-6 mb-3">
+            <InputNumber @bind-Value="Model.YearsExperience" class="form-control" min="0" max="60" disabled="@IsSubmitting" />
+        </FormField>
+    </div>
+
+    <FormField Label="Primary teaching language" For="@(() => Model.Language)" Class="mb-3">
+        <InputSelect @bind-Value="Model.Language" class="form-select" disabled="@IsSubmitting">
+            @foreach (var lang in _languages)
+            {
+                <option value="@lang.Code">@lang.DisplayName (@lang.Code)</option>
+            }
+        </InputSelect>
+    </FormField>
+
+    <FormCheckGroup Label="Who do you teach? (select at least one)" ErrorMessage="@GetAgeGroupErrorMessage()" Class="mb-3">
+        <div class="d-flex flex-wrap gap-4 pt-1">
+            <div class="form-check">
+                <InputCheckbox @bind-Value="Model.TeachesKids" class="form-check-input" id="teachKids" disabled="@IsSubmitting" />
+                <label class="form-check-label" for="teachKids">Kids (under 13)</label>
+            </div>
+            <div class="form-check">
+                <InputCheckbox @bind-Value="Model.TeachesTeens" class="form-check-input" id="teachTeens" disabled="@IsSubmitting" />
+                <label class="form-check-label" for="teachTeens">Teens (13-17)</label>
+            </div>
+            <div class="form-check">
+                <InputCheckbox @bind-Value="Model.TeachesAdults" class="form-check-input" id="teachAdults" disabled="@IsSubmitting" />
+                <label class="form-check-label" for="teachAdults">Adults (18+)</label>
+            </div>
+        </div>
+    </FormCheckGroup>
+
+    <div class="row">
+        <FormField Label="Student gender restriction" For="@(() => Model.GenderRestriction)" Class="col-12 col-md-6 mb-3">
+            <EnumSelect @bind-Value="Model.GenderRestriction" Labels="EnumDisplayHelper.TeacherGenderRestrictionLabels" Disabled="@IsSubmitting" />
+        </FormField>
+
+        <FormField Label="Max weekly teaching hours" For="@(() => Model.MaxWeeklyHours)" Class="col-12 col-md-6 mb-3">
+            <InputNumber @bind-Value="Model.MaxWeeklyHours" class="form-control" min="1" max="80" disabled="@IsSubmitting" />
+        </FormField>
+    </div>
+
+    <div class="d-flex justify-content-between align-items-center mt-4">
+        <a href="@AppRoutes.OnboardingRole" class="btn btn-link text-decoration-none text-muted" disabled="@IsSubmitting">
+            Back to role
+        </a>
+        <button type="submit" class="btn btn-primary px-4" disabled="@(IsSubmitting || _isUploading)">
+            @if (IsSubmitting)
+            {
+                <span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
+                <span>Saving profile...</span>
+            }
+            else
+            {
+                <span>Complete teacher profile</span>
+            }
+        </button>
+    </div>
+</EditForm>
+
+@code {
+    private EditContext _editContext = default!;
+    private ValidationMessageStore _messageStore = default!;
+    private TeacherOnboardingInput? _previousModel;
+    private IReadOnlyList<LanguageOption> _languages = [];
+    private bool _isUploading;
+
+    [SupplyParameterFromForm]
+    public TeacherOnboardingInput Model { get; set; } = default!;
+
+    [Parameter, EditorRequired]
+    public EventCallback<TeacherOnboardingInput> OnSubmit { get; set; }
+
+    [Parameter]
+    public ApiError? Error { get; set; }
+
+    [Parameter]
+    public string? ErrorMessage { get; set; }
+
+    [Parameter]
+    public bool IsSubmitting { get; set; }
+
+    private string? DisplayErrorMessage => ErrorMessage ?? Error?.Message;
+
+    protected override void OnInitialized()
+    {
+        Model ??= new();
+        _languages = LanguageCatalog.GetLanguages();
+        EnsureEditContext();
+    }
+
+    protected override void OnParametersSet()
+    {
+        Model ??= new();
+        EnsureEditContext();
+
+        if (Error?.FieldErrors is { Count: > 0 } && _messageStore is not null && _editContext is not null)
+        {
+            _messageStore.Clear();
+            _messageStore.AddFieldErrors(Model, Error.FieldErrors);
+            _editContext.NotifyValidationStateChanged();
+        }
+    }
+
+    private void EnsureEditContext()
+    {
+        if (_editContext is null || !ReferenceEquals(Model, _previousModel))
+        {
+            _previousModel = Model;
+            _editContext = new EditContext(Model);
+            _messageStore = new ValidationMessageStore(_editContext);
+
+            _editContext.OnFieldChanged += (sender, args) =>
+            {
+                _messageStore.Clear(args.FieldIdentifier);
+                _editContext.NotifyValidationStateChanged();
+            };
+
+            _editContext.OnValidationRequested += (sender, args) =>
+            {
+                _messageStore.Clear();
+            };
+        }
+    }
+
+    private void HandleUploadingChanged(bool uploading) => _isUploading = uploading;
+
+    private string? GetAgeGroupErrorMessage()
+    {
+        if (_editContext is null) return null;
+        var fieldId = _editContext.Field(nameof(Model.TeachesKids));
+        return _editContext.GetValidationMessages(fieldId).FirstOrDefault();
+    }
+
+    private Task HandleValidSubmit() => OnSubmit.InvokeAsync(Model);
+}

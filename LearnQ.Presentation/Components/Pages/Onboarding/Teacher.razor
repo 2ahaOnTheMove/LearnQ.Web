@@ -1,0 +1,59 @@
+@attribute [Route(AppRoutes.OnboardingTeacher)]
+@inject IOnboardingApi OnboardingApi
+@inject NavigationManager Navigation
+
+<XPageTitle Name="Teacher Onboarding" />
+
+<TeacherOnboardingForm OnSubmit="HandleTeacherSubmit"
+                       Error="@_apiError"
+                       IsSubmitting="@_isSubmitting" />
+
+@code {
+    private ApiError? _apiError;
+    private bool _isSubmitting;
+
+    protected override async Task OnInitializedAsync()
+    {
+        var statusResult = await OnboardingApi.GetStatusAsync();
+        if (statusResult.IsSuccess && statusResult.Value is not null)
+        {
+            var redirect = OnboardingRoute.GetGuardRedirect(statusResult.Value, AppRoutes.OnboardingTeacher);
+            if (redirect is not null)
+            {
+                Navigation.NavigateTo(redirect);
+            }
+        }
+    }
+
+    private async Task HandleTeacherSubmit(TeacherOnboardingInput input)
+    {
+        _apiError = null;
+        _isSubmitting = true;
+
+        var request = new TeacherOnboardingRequest(
+            input.AvatarUrl,
+            input.Headline,
+            input.Bio,
+            input.IntroVideoUrl,
+            input.Gender,
+            input.YearsExperience ?? 0,
+            input.Language,
+            input.TeachesKids,
+            input.TeachesTeens,
+            input.TeachesAdults,
+            input.GenderRestriction,
+            input.MaxWeeklyHours ?? 20
+        );
+
+        var result = await OnboardingApi.SubmitTeacherAsync(request);
+        _isSubmitting = false;
+
+        if (result.IsFailure)
+        {
+            _apiError = result.Error;
+            return;
+        }
+
+        Navigation.NavigateTo(AppRoutes.OnboardingStatus);
+    }
+}
