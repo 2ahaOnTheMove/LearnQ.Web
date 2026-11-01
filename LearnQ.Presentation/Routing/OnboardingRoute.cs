@@ -1,10 +1,14 @@
 using LearnQ.Application.Common.Enums;
 using LearnQ.Application.Features.Onboarding;
+using Microsoft.AspNetCore.Http;
 
 namespace LearnQ.Presentation.Routing;
 
 public static class OnboardingRoute
 {
+    public static bool ShouldSkipGuard(HttpContext? httpContext) =>
+        httpContext is not null && HttpMethods.IsPost(httpContext.Request.Method);
+
     public static string GetDestination(OnboardingStatusResponse status)
     {
         if (status.HasCompletedProfile)
