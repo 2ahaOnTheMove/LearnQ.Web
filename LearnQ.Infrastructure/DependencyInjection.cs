@@ -1,5 +1,5 @@
 using LearnQ.Application.Common.Interfaces;
-using LearnQ.Infrastructure.Api;
+using LearnQ.Infrastructure.Api.Clients;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 
