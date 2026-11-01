@@ -1,0 +1,18 @@
+<div class="@Class">
+    @if (!string.IsNullOrWhiteSpace(Label))
+    {
+        <label class="form-label d-block fw-semibold mb-2">@Label</label>
+    }
+    @ChildContent
+    @if (!string.IsNullOrWhiteSpace(ErrorMessage))
+    {
+        <div class="invalid-feedback d-block mt-1">@ErrorMessage</div>
+    }
+</div>
+
+@code {
+    [Parameter] public string? Label { get; set; }
+    [Parameter] public RenderFragment? ChildContent { get; set; }
+    [Parameter] public string? ErrorMessage { get; set; }
+    [Parameter] public string Class { get; set; } = "mb-3";
+}

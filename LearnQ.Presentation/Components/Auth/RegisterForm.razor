@@ -17,7 +17,7 @@
         </FormField>
     </div>
 
-    <FormField Label="Username" For="() => Model.DisplayName">
+    <FormField Label="Display name" For="() => Model.DisplayName">
         <InputText id="DisplayName" @bind-Value="Model.DisplayName" autocomplete="username" class="form-control" />
     </FormField>
 
@@ -34,22 +34,26 @@
             <InputText id="ConfirmPassword" type="password" @bind-Value="Model.ConfirmPassword" autocomplete="new-password" class="form-control" />
         </FormField>
     </div>
+    
+    <FormField Label="Referral (optional)" For="() => Model.ReferralCode">
+        <InputText id="ReferralCode" @bind-Value="Model.ReferralCode" autocomplete="off" class="form-control" />
+    </FormField>
 
     <FormCheck For="() => Model.TermsAccepted">
-        <Label>I accept the <a href="@AppRoutes.Terms" target="_blank">Terms of Service</a></Label>
+        <Label>I have read and agree to the  <a href="@AppRoutes.Terms" target="_blank">Terms and Conditions</a></Label>
         <ChildContent>
             <InputCheckbox id="TermsAccepted" class="form-check-input" @bind-Value="Model.TermsAccepted" />
         </ChildContent>
     </FormCheck>
 
     <FormCheck For="() => Model.PrivacyAccepted">
-        <Label>I accept the <a href="@AppRoutes.Privacy" target="_blank">Privacy Policy</a></Label>
+        <Label>I have read and agree to the  <a href="@AppRoutes.Privacy" target="_blank">Privacy Policy</a></Label>
         <ChildContent>
             <InputCheckbox id="PrivacyAccepted" class="form-check-input" @bind-Value="Model.PrivacyAccepted" />
         </ChildContent>
     </FormCheck>
 
-    <button class="btn btn-dark w-100" type="submit">Create account</button>
+    <button class="btn btn-dark w-100" type="submit">Register</button>
 </EditForm>
 
 <p class="text-center text-body-secondary mt-3 mb-0">

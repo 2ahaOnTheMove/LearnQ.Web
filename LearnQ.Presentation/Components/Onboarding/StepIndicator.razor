@@ -1,0 +1,84 @@
+@inject NavigationManager Navigation
+
+<div class="mb-4">
+    <div class="d-flex justify-content-between align-items-center position-relative">
+        <div class="progress position-absolute w-100" style="height: 2px; top: 18px; z-index: 0;">
+            <div class="progress-bar bg-primary" role="progressbar" style="width: @(ProgressPercentage)%;"></div>
+        </div>
+        
+        <div class="d-flex flex-column align-items-center position-relative" style="z-index: 1;">
+            <div class="rounded-circle d-flex align-items-center justify-content-center fw-bold @GetStepCircleClass(1)"
+                 style="width: 36px; height: 36px;">
+                @if (EffectiveStep > 1)
+                {
+                    <span>✓</span>
+                }
+                else
+                {
+                    <span>1</span>
+                }
+            </div>
+            <span class="small mt-1 @GetStepLabelClass(1)">Role</span>
+        </div>
+
+        <div class="d-flex flex-column align-items-center position-relative" style="z-index: 1;">
+            <div class="rounded-circle d-flex align-items-center justify-content-center fw-bold @GetStepCircleClass(2)"
+                 style="width: 36px; height: 36px;">
+                @if (EffectiveStep > 2)
+                {
+                    <span>✓</span>
+                }
+                else
+                {
+                    <span>2</span>
+                }
+            </div>
+            <span class="small mt-1 @GetStepLabelClass(2)">Profile</span>
+        </div>
+
+        <div class="d-flex flex-column align-items-center position-relative" style="z-index: 1;">
+            <div class="rounded-circle d-flex align-items-center justify-content-center fw-bold @GetStepCircleClass(3)"
+                 style="width: 36px; height: 36px;">
+                3
+            </div>
+            <span class="small mt-1 @GetStepLabelClass(3)">Done</span>
+        </div>
+    </div>
+</div>
+
+@code {
+    [Parameter] public int? Step { get; set; }
+
+    private int EffectiveStep
+    {
+        get
+        {
+            if (Step.HasValue) return Step.Value;
+            var path = new Uri(Navigation.Uri).AbsolutePath.ToLowerInvariant();
+            if (path.Contains("/onboarding/role")) return 1;
+            if (path.Contains("/onboarding/student") || path.Contains("/onboarding/teacher")) return 2;
+            if (path.Contains("/onboarding/status") || path.Contains("/dashboard")) return 3;
+            return 1;
+        }
+    }
+
+    private int ProgressPercentage => EffectiveStep switch
+    {
+        1 => 0,
+        2 => 50,
+        _ => 100
+    };
+
+    private string GetStepCircleClass(int stepNumber)
+    {
+        if (EffectiveStep > stepNumber) return "bg-primary text-white";
+        if (EffectiveStep == stepNumber) return "bg-primary text-white border border-2 border-primary";
+        return "bg-light text-muted border";
+    }
+
+    private string GetStepLabelClass(int stepNumber)
+    {
+        if (EffectiveStep >= stepNumber) return "fw-bold text-dark";
+        return "text-muted";
+    }
+}

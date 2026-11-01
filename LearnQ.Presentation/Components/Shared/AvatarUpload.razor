@@ -1,0 +1,117 @@
+@using LearnQ.Application.Common.Interfaces
+@inject IAvatarApi AvatarApi
+
+<div class="@Class">
+    <label class="form-label fw-medium d-block">@Label</label>
+    <div class="d-flex align-items-center gap-3">
+        <div class="flex-shrink-0">
+            @if (!string.IsNullOrWhiteSpace(Value))
+            {
+                <img src="@Value" alt="Avatar Preview" class="rounded-circle border object-fit-cover" style="width: 72px; height: 72px;" />
+            }
+            else
+            {
+                <div class="rounded-circle bg-light border d-flex align-items-center justify-content-center text-muted" style="width: 72px; height: 72px;">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" fill="currentColor" class="bi bi-person-fill" viewBox="0 0 16 16">
+                        <path d="M3 14s-1 0-1-1 1-4 6-4 6 3 6 4-1 1-1 1zm5-6a3 3 0 1 0 0-6 3 3 0 0 0 0 6"/>
+                    </svg>
+                </div>
+            }
+        </div>
+        <div class="flex-grow-1">
+            <InputFile id="@Id"
+                       OnChange="HandleFileSelected"
+                       accept="image/jpeg,image/png,image/webp"
+                       class="form-control form-control-sm"
+                       disabled="@(Disabled || _isUploading)" />
+            <div class="form-text">JPEG, PNG, or WebP. Max 2 MB.</div>
+            @if (_isUploading)
+            {
+                <div class="d-flex align-items-center gap-2 text-primary small mt-1">
+                    <span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
+                    <span>Uploading image...</span>
+                </div>
+            }
+            @if (!string.IsNullOrWhiteSpace(Value) && !_isUploading)
+            {
+                <button type="button" class="btn btn-outline-danger btn-sm mt-2" @onclick="HandleRemove" disabled="@Disabled">
+                    Remove avatar
+                </button>
+            }
+        </div>
+    </div>
+    @if (!string.IsNullOrWhiteSpace(_uploadError))
+    {
+        <div class="invalid-feedback d-block mt-1">@_uploadError</div>
+    }
+</div>
+
+@code {
+    private const long MaxFileSize = 2 * 1024 * 1024;
+    private static readonly string[] AllowedMimeTypes = ["image/jpeg", "image/png", "image/webp"];
+
+    private bool _isUploading;
+    private string? _uploadError;
+
+    [Parameter] public string? Value { get; set; }
+    [Parameter] public EventCallback<string?> ValueChanged { get; set; }
+    [Parameter] public EventCallback<bool> IsUploadingChanged { get; set; }
+    [Parameter] public string Id { get; set; } = $"avatar-{Guid.NewGuid():N}";
+    [Parameter] public string Label { get; set; } = "Avatar photo (optional)";
+    [Parameter] public string Class { get; set; } = "mb-3";
+    [Parameter] public bool Disabled { get; set; }
+
+    private async Task HandleFileSelected(InputFileChangeEventArgs e)
+    {
+        _uploadError = null;
+        var file = e.File;
+        if (file is null) return;
+
+        var contentType = file.ContentType.ToLowerInvariant();
+        if (!AllowedMimeTypes.Contains(contentType))
+        {
+            _uploadError = "Please select a valid image file (JPEG, PNG, or WebP).";
+            return;
+        }
+
+        if (file.Size > MaxFileSize)
+        {
+            _uploadError = "Image file must be 2 MB or smaller.";
+            return;
+        }
+
+        _isUploading = true;
+        await IsUploadingChanged.InvokeAsync(true);
+
+        try
+        {
+            using var stream = file.OpenReadStream(MaxFileSize);
+            var result = await AvatarApi.UploadAsync(stream, file.Name, contentType);
+            if (result.IsSuccess && !string.IsNullOrWhiteSpace(result.Value))
+            {
+                Value = result.Value;
+                await ValueChanged.InvokeAsync(Value);
+            }
+            else
+            {
+                _uploadError = result.Error?.Message ?? "Failed to upload avatar. Please try again.";
+            }
+        }
+        catch
+        {
+            _uploadError = "An unexpected error occurred while uploading the file.";
+        }
+        finally
+        {
+            _isUploading = false;
+            await IsUploadingChanged.InvokeAsync(false);
+        }
+    }
+
+    private async Task HandleRemove()
+    {
+        Value = null;
+        _uploadError = null;
+        await ValueChanged.InvokeAsync(null);
+    }
+}
