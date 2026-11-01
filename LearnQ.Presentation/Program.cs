@@ -1,5 +1,6 @@
-using LearnQ.Presentation.Components;
 using LearnQ.Infrastructure;
+using LearnQ.Presentation.Components;
+using LearnQ.Presentation.Routing;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -12,10 +13,10 @@ var app = builder.Build();
 
 if (!app.Environment.IsDevelopment())
 {
-    app.UseExceptionHandler("/error", createScopeForErrors: true);
+    app.UseExceptionHandler(AppRoutes.Error, createScopeForErrors: true);
     app.UseHsts();
 }
-app.UseStatusCodePagesWithReExecute("/not-found", createScopeForStatusCodePages: true);
+app.UseStatusCodePagesWithReExecute(AppRoutes.NotFound, createScopeForStatusCodePages: true);
 app.UseHttpsRedirection();
 
 app.UseAntiforgery();

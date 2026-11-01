@@ -1,5 +1,5 @@
-@page "/auth/login"
-@layout AuthLayout
+@attribute [Route(AppRoutes.Login)]
+
 <XPageTitle Name="Sign In" />
 <p>login page</p>
-<p>Need an account? <NavLink href="/auth/register">Register</NavLink> here.</p>
+<p>Need an account? <NavLink href="@AppRoutes.Register">Register</NavLink> here.</p>
