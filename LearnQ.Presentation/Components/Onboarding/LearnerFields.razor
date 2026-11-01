@@ -1,0 +1,84 @@
+@using LearnQ.Application.Common.Enums
+
+<div class="row">
+    <div class="col-12 mb-3">
+        <AvatarUpload Value="@Model.AvatarUrl"
+                      ValueChanged="@((url) => Model.AvatarUrl = url)"
+                      IsUploadingChanged="IsUploadingChanged"
+                      Disabled="@Disabled" />
+    </div>
+
+    @if (ShowName)
+    {
+        <FormField Label="Given name" For="@(() => Model.GivenName)" Class="col-12 col-md-6 mb-3">
+            <InputText @bind-Value="Model.GivenName" class="form-control" placeholder="First name" disabled="@Disabled" />
+        </FormField>
+
+        <FormField Label="Family name" For="@(() => Model.FamilyName)" Class="col-12 col-md-6 mb-3">
+            <InputText @bind-Value="Model.FamilyName" class="form-control" placeholder="Last name" disabled="@Disabled" />
+        </FormField>
+    }
+
+    <FormField Label="Date of birth" For="@(() => Model.DateOfBirth)" Class="col-12 col-md-6 mb-3">
+        <InputDate @bind-Value="Model.DateOfBirth" class="form-control" disabled="@Disabled" />
+    </FormField>
+
+    <FormField Label="Gender" For="@(() => Model.Gender)" Class="col-12 col-md-6 mb-3">
+        <EnumSelect @bind-Value="Model.Gender" Labels="EnumDisplayHelper.GenderLabels" Disabled="@Disabled" />
+    </FormField>
+
+    <FormField Label="Preferred teacher gender" For="@(() => Model.PreferredTeacherGender)" Class="col-12 mb-3">
+        <EnumSelect @bind-Value="Model.PreferredTeacherGender" Labels="EnumDisplayHelper.LearnerPreferredTeacherGenderLabels" Disabled="@Disabled" />
+    </FormField>
+
+    <FormField Label="Previous learning experience (optional)" For="@(() => Model.PreviousExperience)" Class="col-12 mb-3">
+        <InputTextArea @bind-Value="Model.PreviousExperience"
+                       class="form-control"
+                       rows="3"
+                       maxlength="500"
+                       placeholder="Tell us about any prior lessons, level, or goals"
+                       disabled="@Disabled" />
+        <div class="form-text text-end">@(500 - (Model.PreviousExperience?.Length ?? 0)) characters remaining</div>
+    </FormField>
+
+    <FormField Label="Notes for teacher (optional)" For="@(() => Model.NotesForTeacher)" Class="col-12 mb-3">
+        <InputTextArea @bind-Value="Model.NotesForTeacher"
+                       class="form-control"
+                       rows="3"
+                       maxlength="1000"
+                       placeholder="Special preferences or notes for your instructor"
+                       disabled="@Disabled" />
+        <div class="form-text text-end">@(1000 - (Model.NotesForTeacher?.Length ?? 0)) characters remaining</div>
+    </FormField>
+
+    <FormField Label="Additional needs (optional)" For="@(() => Model.AdditionalNeeds)" Class="col-12 mb-3">
+        <InputTextArea @bind-Value="Model.AdditionalNeeds"
+                       class="form-control"
+                       rows="2"
+                       maxlength="1000"
+                       placeholder="Any accessibility requirements or specific accommodations"
+                       disabled="@Disabled" />
+        <div class="form-text text-end">@(1000 - (Model.AdditionalNeeds?.Length ?? 0)) characters remaining</div>
+    </FormField>
+
+    <FormCheck For="@(() => Model.RecordingConsent)" Class="col-12 mb-3">
+        <ChildContent>
+            <InputCheckbox @bind-Value="Model.RecordingConsent" class="form-check-input" disabled="@Disabled" />
+        </ChildContent>
+        <Label>Allow lesson recordings for review and quality assurance</Label>
+    </FormCheck>
+</div>
+
+@code {
+    [Parameter, EditorRequired]
+    public LearnerInput Model { get; set; } = default!;
+
+    [Parameter]
+    public bool ShowName { get; set; }
+
+    [Parameter]
+    public bool Disabled { get; set; }
+
+    [Parameter]
+    public EventCallback<bool> IsUploadingChanged { get; set; }
+}

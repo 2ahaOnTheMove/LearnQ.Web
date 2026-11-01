@@ -1,0 +1,505 @@
+@attribute [Route(AppRoutes.OnboardingStudent)]
+@using static Microsoft.AspNetCore.Components.Web.RenderMode
+@rendermode InteractiveServer
+@inject IOnboardingApi OnboardingApi
+@inject NavigationManager Navigation
+
+<XPageTitle Name="Student Onboarding" />
+
+<div class="mb-4">
+    <h2 class="h3 fw-bold mb-2">Student Profile Setup</h2>
+    <p class="text-muted">Tell us who will be learning so we can tailor the experience.</p>
+</div>
+
+@if (!string.IsNullOrWhiteSpace(_apiError?.Message))
+{
+    <div class="alert alert-danger" role="alert">@_apiError.Message</div>
+}
+
+@if (_showSwitchWarning)
+{
+    <div class="alert alert-warning border-warning shadow-sm mb-4" role="alert">
+        <h5 class="alert-heading fw-bold mb-2">Change Account Type?</h5>
+        <p class="mb-3">Switching who this account is for will discard any learner information you have entered so far.</p>
+        <div class="d-flex gap-2">
+            <button type="button" class="btn btn-warning btn-sm fw-semibold" @onclick="ConfirmSwitchAccountType">
+                Yes, switch and reset
+            </button>
+            <button type="button" class="btn btn-outline-secondary btn-sm" @onclick="CancelSwitchAccountType">
+                Cancel
+            </button>
+        </div>
+    </div>
+}
+
+<div class="mb-4">
+    <label class="form-label fw-bold d-block mb-2">Who is this account for?</label>
+    <div class="d-flex gap-4">
+        <div class="form-check">
+            <input class="form-check-input"
+                   type="radio"
+                   name="accountTarget"
+                   id="forMyselfRadio"
+                   checked="@(_model.ForSelf == true)"
+                   @onchange="() => RequestAccountTypeChange(true)"
+                   disabled="@_isSubmitting" />
+            <label class="form-check-label fw-medium" for="forMyselfRadio">
+                For myself
+            </label>
+        </div>
+        <div class="form-check">
+            <input class="form-check-input"
+                   type="radio"
+                   name="accountTarget"
+                   id="forSomeoneElseRadio"
+                   checked="@(_model.ForSelf == false)"
+                   @onchange="() => RequestAccountTypeChange(false)"
+                   disabled="@_isSubmitting" />
+            <label class="form-check-label fw-medium" for="forSomeoneElseRadio">
+                For someone else (e.g. child / family)
+            </label>
+        </div>
+    </div>
+    @if (_showTargetError && _model.ForSelf is null)
+    {
+        <div class="invalid-feedback d-block">Please select who this account is for.</div>
+    }
+</div>
+
+@if (_model.ForSelf == true)
+{
+    @* FOR MYSELF BRANCH *@
+    <EditForm EditContext="_selfEditContext" OnValidSubmit="HandleSelfSubmit" novalidate>
+        <DataAnnotationsValidator />
+        <BootstrapValidation />
+
+        <div class="p-3 bg-light rounded border mb-4">
+            <h5 class="fw-bold mb-3">Your Learner Details</h5>
+            <LearnerFields Model="_model.SelfLearner"
+                           ShowName="false"
+                           Disabled="@_isSubmitting"
+                           IsUploadingChanged="HandleUploadingChanged" />
+        </div>
+
+        <div class="d-flex justify-content-between align-items-center">
+            <a href="@AppRoutes.OnboardingRole" class="btn btn-link text-decoration-none text-muted" disabled="@_isSubmitting">
+                Back to role
+            </a>
+            <button type="submit" class="btn btn-primary px-4" disabled="@(_isSubmitting || _isUploading)">
+                @if (_isSubmitting)
+                {
+                    <span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
+                    <span>Saving profile...</span>
+                }
+                else
+                {
+                    <span>Complete registration</span>
+                }
+            </button>
+        </div>
+    </EditForm>
+}
+else if (_model.ForSelf == false)
+{
+    @* FOR SOMEONE ELSE BRANCH *@
+    <div class="mb-4">
+        <div class="card p-3 mb-4 bg-light border">
+            <div class="form-check">
+                <input class="form-check-input @(_showGuardianError && !_model.GuardianConfirmed ? "is-invalid" : "")"
+                       type="checkbox"
+                       id="guardianCheck"
+                       @bind="_model.GuardianConfirmed"
+                       @bind:after="ClearGuardianError"
+                       disabled="@_isSubmitting" />
+                <label class="form-check-label fw-medium" for="guardianCheck">
+                    I confirm I am at least 16 years old and I am the parent or legal guardian of every learner I add.
+                </label>
+                @if (_showGuardianError && !_model.GuardianConfirmed)
+                {
+                    <div class="invalid-feedback d-block">
+                        You must confirm you are at least 16 years old and the parent or legal guardian.
+                    </div>
+                }
+            </div>
+        </div>
+
+        @if (_showLearnerDeleteConfirm.HasValue)
+        {
+            <div class="alert alert-danger border-danger shadow-sm mb-4" role="alert">
+                <h6 class="alert-heading fw-bold mb-2">Remove Learner?</h6>
+                <p class="mb-3 small">Are you sure you want to remove this learner from your account?</p>
+                <div class="d-flex gap-2">
+                    <button type="button" class="btn btn-danger btn-sm" @onclick="() => ConfirmDeleteLearner(_showLearnerDeleteConfirm.Value)">
+                        Yes, remove
+                    </button>
+                    <button type="button" class="btn btn-outline-secondary btn-sm" @onclick="() => _showLearnerDeleteConfirm = null">
+                        Cancel
+                    </button>
+                </div>
+            </div>
+        }
+
+        @if (_editingLearner is not null)
+        {
+            <div class="card p-4 border-primary shadow-sm mb-4">
+                <h5 class="fw-bold mb-3">@(_isNewLearner ? "Add New Learner" : "Edit Learner")</h5>
+                <EditForm EditContext="_learnerEditContext" OnValidSubmit="SaveActiveLearner" novalidate>
+                    <DataAnnotationsValidator />
+                    <BootstrapValidation />
+
+                    <LearnerFields Model="_editingLearner"
+                                   ShowName="true"
+                                   Disabled="@_isSubmitting"
+                                   IsUploadingChanged="HandleUploadingChanged" />
+
+                    <div class="d-flex justify-content-end gap-2 mt-3">
+                        <button type="button" class="btn btn-outline-secondary" @onclick="CancelActiveLearner">
+                            Cancel
+                        </button>
+                        <button type="submit" class="btn btn-primary" disabled="@_isUploading">
+                            Save Learner
+                        </button>
+                    </div>
+                </EditForm>
+            </div>
+        }
+        else
+        {
+            <div class="mb-4">
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <h5 class="fw-bold mb-0">Learners (@_model.SomeoneElseLearners.Count / @OnboardingConstants.MaxLearners)</h5>
+                    @if (_model.SomeoneElseLearners.Count < OnboardingConstants.MaxLearners)
+                    {
+                        <button type="button" class="btn btn-outline-primary btn-sm" @onclick="StartAddLearner" disabled="@_isSubmitting">
+                            + Add learner
+                        </button>
+                    }
+                    else
+                    {
+                        <span class="badge bg-secondary-subtle text-secondary border">You can add up to 4 learners</span>
+                    }
+                </div>
+
+                @if (_model.SomeoneElseLearners.Count == 0)
+                {
+                    <div class="text-center p-4 border rounded bg-light text-muted">
+                        <p class="mb-2">No learners added yet.</p>
+                        <button type="button" class="btn btn-primary btn-sm" @onclick="StartAddLearner" disabled="@_isSubmitting">
+                            Add your first learner
+                        </button>
+                    </div>
+                }
+                else
+                {
+                    <div class="list-group mb-3">
+                        @foreach (var learner in _model.SomeoneElseLearners)
+                        {
+                            <div class="list-group-item d-flex justify-content-between align-items-center p-3">
+                                <div class="d-flex align-items-center gap-3">
+                                    @if (!string.IsNullOrWhiteSpace(learner.AvatarUrl))
+                                    {
+                                        <img src="@learner.AvatarUrl" alt="@learner.GivenName" class="rounded-circle object-fit-cover border" style="width: 44px; height: 44px;" />
+                                    }
+                                    else
+                                    {
+                                        <div class="rounded-circle bg-light border d-flex align-items-center justify-content-center text-muted" style="width: 44px; height: 44px;">
+                                            👤
+                                        </div>
+                                    }
+                                    <div>
+                                        <div class="fw-bold">@learner.GivenName @learner.FamilyName</div>
+                                        <div class="small text-muted">
+                                            DOB: @(learner.DateOfBirth?.ToString("yyyy-MM-dd") ?? "—") | Gender: @learner.Gender
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="d-flex gap-2">
+                                    <button type="button" class="btn btn-outline-secondary btn-sm" @onclick="() => StartEditLearner(learner)" disabled="@_isSubmitting">
+                                        Edit
+                                    </button>
+                                    <button type="button" class="btn btn-outline-danger btn-sm" @onclick="() => _showLearnerDeleteConfirm = learner.Id" disabled="@_isSubmitting">
+                                        Remove
+                                    </button>
+                                </div>
+                            </div>
+                        }
+                    </div>
+                }
+
+                @if (_showLearnerListError && _model.SomeoneElseLearners.Count == 0)
+                {
+                    <div class="invalid-feedback d-block mb-3">Please add at least one learner to proceed.</div>
+                }
+            </div>
+
+            <div class="d-flex justify-content-between align-items-center mt-4">
+                <a href="@AppRoutes.OnboardingRole" class="btn btn-link text-decoration-none text-muted" disabled="@_isSubmitting">
+                    Back to role
+                </a>
+                <button type="button" class="btn btn-primary px-4" @onclick="HandleSomeoneElseSubmit" disabled="@(_isSubmitting || _isUploading)">
+                    @if (_isSubmitting)
+                    {
+                        <span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
+                        <span>Saving profile...</span>
+                    }
+                    else
+                    {
+                        <span>Complete registration</span>
+                    }
+                </button>
+            </div>
+        }
+    </div>
+}
+
+@code {
+    private StudentOnboardingInput _model = new();
+    private EditContext _selfEditContext = default!;
+    private ValidationMessageStore _selfMessageStore = default!;
+
+    private LearnerInput? _editingLearner;
+    private EditContext? _learnerEditContext;
+    private bool _isNewLearner;
+
+    private bool _isSubmitting;
+    private bool _isUploading;
+    private ApiError? _apiError;
+
+    private bool _showTargetError;
+    private bool _showGuardianError;
+    private bool _showLearnerListError;
+
+    private bool _showSwitchWarning;
+    private bool? _pendingSwitchTarget;
+    private Guid? _showLearnerDeleteConfirm;
+
+    protected override async Task OnInitializedAsync()
+    {
+        InitializeSelfContext();
+
+        var statusResult = await OnboardingApi.GetStatusAsync();
+        if (statusResult.IsSuccess && statusResult.Value is not null)
+        {
+            var redirect = OnboardingRoute.GetGuardRedirect(statusResult.Value, AppRoutes.OnboardingStudent);
+            if (redirect is not null)
+            {
+                Navigation.NavigateTo(redirect);
+            }
+        }
+    }
+
+    private void InitializeSelfContext()
+    {
+        _model.SelfLearner.RequiresNames = false;
+        _model.SelfLearner.EnforceAccountHolderMinAge = true;
+        _selfEditContext = new EditContext(_model.SelfLearner);
+        _selfMessageStore = new ValidationMessageStore(_selfEditContext);
+
+        _selfEditContext.OnFieldChanged += (s, e) =>
+        {
+            _selfMessageStore.Clear(e.FieldIdentifier);
+            _selfEditContext.NotifyValidationStateChanged();
+        };
+    }
+
+    private void RequestAccountTypeChange(bool targetForSelf)
+    {
+        if (_model.ForSelf == targetForSelf) return;
+
+        if (_model.HasData())
+        {
+            _pendingSwitchTarget = targetForSelf;
+            _showSwitchWarning = true;
+        }
+        else
+        {
+            ApplyAccountTypeChange(targetForSelf);
+        }
+    }
+
+    private void ConfirmSwitchAccountType()
+    {
+        if (_pendingSwitchTarget.HasValue)
+        {
+            ApplyAccountTypeChange(_pendingSwitchTarget.Value);
+        }
+        _showSwitchWarning = false;
+        _pendingSwitchTarget = null;
+    }
+
+    private void CancelSwitchAccountType()
+    {
+        _showSwitchWarning = false;
+        _pendingSwitchTarget = null;
+    }
+
+    private void ApplyAccountTypeChange(bool targetForSelf)
+    {
+        _model = new StudentOnboardingInput { ForSelf = targetForSelf };
+        _editingLearner = null;
+        _learnerEditContext = null;
+        _showTargetError = false;
+        _showGuardianError = false;
+        _showLearnerListError = false;
+        InitializeSelfContext();
+    }
+
+    private void HandleUploadingChanged(bool uploading) => _isUploading = uploading;
+
+    private void ClearGuardianError()
+    {
+        if (_model.GuardianConfirmed)
+        {
+            _showGuardianError = false;
+        }
+    }
+
+    private async Task HandleSelfSubmit()
+    {
+        _apiError = null;
+        if (!_selfEditContext.Validate())
+        {
+            return;
+        }
+
+        _isSubmitting = true;
+
+        var learnerReq = new LearnerRequest(
+            _model.SelfLearner.AvatarUrl,
+            null,
+            null,
+            _model.SelfLearner.DateOfBirth,
+            _model.SelfLearner.Gender,
+            _model.SelfLearner.PreferredTeacherGender,
+            _model.SelfLearner.PreviousExperience,
+            _model.SelfLearner.NotesForTeacher,
+            _model.SelfLearner.RecordingConsent,
+            _model.SelfLearner.AdditionalNeeds
+        );
+
+        var request = new StudentOnboardingRequest(
+            ForSelf: true,
+            GuardianConfirmed: false,
+            Learners: [learnerReq]
+        );
+
+        var result = await OnboardingApi.SubmitStudentAsync(request);
+        _isSubmitting = false;
+
+        if (result.IsFailure)
+        {
+            _apiError = result.Error;
+            if (result.Error?.FieldErrors is { Count: > 0 })
+            {
+                _selfMessageStore.Clear();
+                _selfMessageStore.AddFieldErrors(_model.SelfLearner, result.Error.FieldErrors);
+                _selfEditContext.NotifyValidationStateChanged();
+            }
+            return;
+        }
+
+        Navigation.NavigateTo(AppRoutes.Dashboard);
+    }
+
+    private void StartAddLearner()
+    {
+        if (_model.SomeoneElseLearners.Count >= OnboardingConstants.MaxLearners) return;
+
+        _isNewLearner = true;
+        _editingLearner = new LearnerInput
+        {
+            RequiresNames = true,
+            EnforceAccountHolderMinAge = false
+        };
+        _learnerEditContext = new EditContext(_editingLearner);
+    }
+
+    private void StartEditLearner(LearnerInput learner)
+    {
+        _isNewLearner = false;
+        _editingLearner = learner.Clone();
+        _editingLearner.RequiresNames = true;
+        _editingLearner.EnforceAccountHolderMinAge = false;
+        _learnerEditContext = new EditContext(_editingLearner);
+    }
+
+    private void SaveActiveLearner()
+    {
+        if (_editingLearner is null || _learnerEditContext is null) return;
+
+        if (!_learnerEditContext.Validate()) return;
+
+        if (_isNewLearner)
+        {
+            _model.SomeoneElseLearners.Add(_editingLearner);
+        }
+        else
+        {
+            var idx = _model.SomeoneElseLearners.FindIndex(l => l.Id == _editingLearner.Id);
+            if (idx >= 0)
+            {
+                _model.SomeoneElseLearners[idx] = _editingLearner;
+            }
+        }
+
+        _editingLearner = null;
+        _learnerEditContext = null;
+        _showLearnerListError = false;
+    }
+
+    private void CancelActiveLearner()
+    {
+        _editingLearner = null;
+        _learnerEditContext = null;
+    }
+
+    private void ConfirmDeleteLearner(Guid id)
+    {
+        _model.SomeoneElseLearners.RemoveAll(l => l.Id == id);
+        _showLearnerDeleteConfirm = null;
+    }
+
+    private async Task HandleSomeoneElseSubmit()
+    {
+        _apiError = null;
+        _showGuardianError = !_model.GuardianConfirmed;
+        _showLearnerListError = _model.SomeoneElseLearners.Count == 0;
+
+        if (_showGuardianError || _showLearnerListError)
+        {
+            return;
+        }
+
+        _isSubmitting = true;
+
+        var learnersList = _model.SomeoneElseLearners.Select(l => new LearnerRequest(
+            l.AvatarUrl,
+            l.GivenName,
+            l.FamilyName,
+            l.DateOfBirth,
+            l.Gender,
+            l.PreferredTeacherGender,
+            l.PreviousExperience,
+            l.NotesForTeacher,
+            l.RecordingConsent,
+            l.AdditionalNeeds
+        )).ToList();
+
+        var request = new StudentOnboardingRequest(
+            ForSelf: false,
+            GuardianConfirmed: _model.GuardianConfirmed,
+            Learners: learnersList
+        );
+
+        var result = await OnboardingApi.SubmitStudentAsync(request);
+        _isSubmitting = false;
+
+        if (result.IsFailure)
+        {
+            _apiError = result.Error;
+            return;
+        }
+
+        Navigation.NavigateTo(AppRoutes.Dashboard);
+    }
+}
