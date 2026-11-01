@@ -1,14 +1,8 @@
-@using LearnQ.Application.Common.Models
-@using LearnQ.Presentation.Routing
-
-<div class="text-center mb-4">
-    <h2 class="fw-bold">Sign In</h2>
-    <p class="text-muted">Welcome back to LearnQ</p>
-</div>
+<PageHeader Title="Sign In" Subtitle="Welcome back to LearnQ" />
 
 @if (!string.IsNullOrEmpty(ErrorMessage))
 {
-    <div class="alert alert-danger" role="alert">
+    <div class="alert alert-danger py-2 small" role="alert">
         @ErrorMessage
     </div>
 }
@@ -20,9 +14,8 @@
           novalidate>
     <DataAnnotationsValidator />
 
-    <FormField Label="Email or Username"
-               For="() => Model.Identifier"
-               HelpText="Enter the email address or username for your account.">
+    <FormField Label="Identifier"
+               For="() => Model.Identifier">
         <InputText id="Identifier"
                    class="form-control"
                    autocomplete="username"
@@ -49,19 +42,16 @@
 
     @* TODO: Add forgot password flow and link once password recovery endpoints are implemented in backend. *@
 
-    <div class="d-grid gap-2">
-        <button type="submit" class="btn btn-primary btn-lg" disabled="@IsSubmitting">
-            <span>Sign In</span>
+    <div class="d-grid mt-3">
+        <button type="submit" class="btn btn-primary w-100" disabled="@IsSubmitting">
+            Sign In
         </button>
     </div>
-
-    <div class="text-center mt-4">
-        <p class="text-muted small mb-0">
-            Don't have an account?
-            <a href="@AppRoutes.Register" class="text-decoration-none fw-semibold">Register here</a>
-        </p>
-    </div>
 </EditForm>
+
+<p class="text-center text-body-secondary mt-3 mb-0">
+    Don't have an account? <a href="@AppRoutes.Register">Register here</a>
+</p>
 
 @code {
     [Parameter, EditorRequired] public EventCallback<LoginInput> OnSubmit { get; set; }

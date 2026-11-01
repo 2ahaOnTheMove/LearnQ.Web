@@ -7,12 +7,12 @@
         <div class="flex-shrink-0">
             @if (!string.IsNullOrWhiteSpace(Value))
             {
-                <img src="@Value" alt="Avatar Preview" class="rounded-circle border object-fit-cover" style="width: 72px; height: 72px;" />
+                <img src="@Value" alt="Avatar Preview" class="rounded-circle border object-fit-cover avatar-md" />
             }
             else
             {
-                <div class="rounded-circle bg-light border d-flex align-items-center justify-content-center text-muted" style="width: 72px; height: 72px;">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" fill="currentColor" class="bi bi-person-fill" viewBox="0 0 16 16">
+                <div class="rounded-circle bg-light border d-flex align-items-center justify-content-center text-muted avatar-md">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" fill="currentColor" viewBox="0 0 16 16">
                         <path d="M3 14s-1 0-1-1 1-4 6-4 6 3 6 4-1 1-1 1zm5-6a3 3 0 1 0 0-6 3 3 0 0 0 0 6"/>
                     </svg>
                 </div>

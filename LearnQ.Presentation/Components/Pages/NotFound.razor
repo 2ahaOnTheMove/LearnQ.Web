@@ -1,5 +1,7 @@
+@using LearnQ.Presentation.Notices
 @attribute [Route(AppRoutes.NotFound)]
 @attribute [AllowAnonymous]
+@inject IHttpContextAccessor HttpContextAccessor
 
 <XPageTitle Name="Not Found" />
 
@@ -9,18 +11,22 @@
 
     protected override void OnInitialized()
     {
-        if (HttpContext is not null)
+        var context = HttpContext ?? HttpContextAccessor.HttpContext;
+        if (context is not null && !context.Response.HasStarted)
         {
-            HttpContext.Response.StatusCode = StatusCodes.Status404NotFound;
+            context.Response.StatusCode = StatusCodes.Status404NotFound;
         }
     }
+
+    private static readonly NoticeCatalog.NoticeEntry Entry = NoticeCatalog.NoticeEntry.NotFound;
 }
 
-<NoticeModal Title="Page Not Found"
-             Message="Sorry, the page you are looking for does not exist or may have been moved."
+<NoticeModal Title="@Entry.Title"
+             Message="@Entry.Message"
              CloseHref="@AppRoutes.Home"
-             CloseText="Go to Home">
+             CloseText="@Entry.CloseText"
+             Severity="@Entry.Severity">
     <AdditionalButtons>
-        <a href="@AppRoutes.Dashboard" class="btn btn-outline-secondary me-2">Go to Dashboard</a>
+        <a href="@AppRoutes.Dashboard" class="btn btn-outline-secondary btn-sm">Dashboard</a>
     </AdditionalButtons>
 </NoticeModal>

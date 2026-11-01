@@ -1,35 +1,30 @@
 @using LearnQ.Application.Common.Enums
 
+<PageHeader Title="Choose Your Role" Subtitle="Select how you would like to use LearnQ." />
+
 <EditForm Model="Model" FormName="role-selection" OnValidSubmit="HandleValidSubmit" Enhance novalidate>
     <DataAnnotationsValidator />
 
-    <div class="text-center mb-4">
-        <h2 class="h3 fw-bold mb-2">Choose your role</h2>
-        <p class="text-muted">Select how you would like to use LearnQ to get started.</p>
-    </div>
-
     @if (!string.IsNullOrWhiteSpace(DisplayErrorMessage))
     {
-        <div class="alert alert-danger" role="alert">@DisplayErrorMessage</div>
+        <div class="alert alert-danger py-2 small" role="alert">@DisplayErrorMessage</div>
     }
 
     <InputRadioGroup @bind-Value="Model.Role">
-        <div class="row g-3 mb-4">
+        <div class="row g-3 mb-3">
             <div class="col-12 col-md-6">
                 <InputRadio Value="@UserRole.Student" class="btn-check" id="role-student" />
-                <label class="btn btn-outline-primary w-100 h-100 p-3 text-center" for="role-student">
-                    <div class="fs-1 mb-2">🎓</div>
-                    <h5 class="card-title fw-bold mb-1">Student</h5>
-                    <p class="card-text small mb-0">Learn for yourself or find qualified teachers for your family.</p>
+                <label class="btn btn-outline-primary w-100 p-3 text-center" for="role-student">
+                    <h6 class="fw-semibold mb-1">Student</h6>
+                    <p class="small mb-0">Learn for yourself or find qualified teachers for your family.</p>
                 </label>
             </div>
 
             <div class="col-12 col-md-6">
                 <InputRadio Value="@UserRole.Teacher" class="btn-check" id="role-teacher" />
-                <label class="btn btn-outline-primary w-100 h-100 p-3 text-center" for="role-teacher">
-                    <div class="fs-1 mb-2">👩‍🏫</div>
-                    <h5 class="card-title fw-bold mb-1">Teacher</h5>
-                    <p class="card-text small mb-0">Apply as an instructor, manage availability, and teach learners.</p>
+                <label class="btn btn-outline-primary w-100 p-3 text-center" for="role-teacher">
+                    <h6 class="fw-semibold mb-1">Teacher</h6>
+                    <p class="small mb-0">Apply as an instructor, manage availability, and teach learners.</p>
                 </label>
             </div>
         </div>
@@ -39,13 +34,16 @@
         <ValidationMessage For="@(() => Model.Role)" class="invalid-feedback d-block" />
     </div>
 
-    <div class="d-grid gap-2">
-        <button type="submit" class="btn btn-primary btn-lg" disabled="@IsSubmitting">
-            <span>Continue</span>
+    <div class="d-grid">
+        <button type="submit" class="btn btn-primary w-100" disabled="@IsSubmitting">
+            Continue
         </button>
-        <a href="@AppRoutes.Home" class="btn btn-link text-decoration-none text-muted">Back to home</a>
     </div>
 </EditForm>
+
+<p class="text-center text-body-secondary small mt-3 mb-0">
+    <a href="@AppRoutes.Home">Back to home</a>
+</p>
 
 @code {
     [SupplyParameterFromForm]

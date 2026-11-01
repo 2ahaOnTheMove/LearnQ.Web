@@ -2,6 +2,26 @@
 
 <NoticeHost />
 <NavMenu />
-<main>
+<main class="container py-4 py-md-5">
     @Body
 </main>
+<footer class="border-top py-3 mt-auto">
+    <div class="container d-flex flex-wrap justify-content-between align-items-center gap-2">
+        <div class="d-flex align-items-center gap-2">
+            <BrandLogo Variant="BrandLogoVariant.Mark" Height="20" Decorative="true" />
+            <small class="text-body-secondary">&copy; @DateTime.UtcNow.Year LearnQ</small>
+        </div>
+        <div class="d-flex gap-3 align-items-center">
+            <a href="@AppRoutes.Terms" class="small text-body-secondary text-decoration-none">Terms</a>
+            <a href="@AppRoutes.Privacy" class="small text-body-secondary text-decoration-none">Privacy</a>
+            <AuthorizeView>
+                <Authorized>
+                    <form method="post" action="@AppRoutes.Logout" class="d-inline">
+                        <AntiforgeryToken />
+                        <button type="submit" class="small text-body-secondary text-decoration-none bg-transparent border-0 p-0">Log out</button>
+                    </form>
+                </Authorized>
+            </AuthorizeView>
+        </div>
+    </div>
+</footer>

@@ -1,6 +1,6 @@
 @attribute [Route(AppRoutes.VerifyEmail)]
 @attribute [Authorize(Policy = AuthPolicies.AuthenticatedOnly)]
-@attribute [EnableRateLimiting("verify-email")]
+@attribute [EnableRateLimiting(RateLimitPolicies.VerifyEmail)]
 @using Microsoft.AspNetCore.RateLimiting
 @inject IAuthApi AuthApi
 @inject IAuthService AuthService
@@ -42,7 +42,7 @@
 
         if (HttpContext is not null && !HttpMethods.IsPost(HttpContext.Request.Method))
         {
-            var isVerified = HttpContext.User.FindFirst(AppClaims.EmailVerified)?.Value == "true";
+            var isVerified = HttpContext.User.FindFirst(AuthClaimTypes.EmailVerified)?.Value == "true";
             if (isVerified)
             {
                 var destination = PostAuthRoute.GetPostAuthDestination(HttpContext.User, ReturnUrl);

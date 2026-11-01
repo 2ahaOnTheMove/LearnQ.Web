@@ -1,18 +1,20 @@
+<PageHeader Title="Create Account" Subtitle="Join LearnQ to start the journey" />
+
 <EditForm EditContext="_editContext" FormName="register" OnValidSubmit="HandleValidSubmit" Enhance novalidate>
     <DataAnnotationsValidator />
     <BootstrapValidation />
 
     @if (!string.IsNullOrWhiteSpace(DisplayErrorMessage))
     {
-        <div class="alert alert-danger" role="alert">@DisplayErrorMessage</div>
+        <div class="alert alert-danger py-2 small" role="alert">@DisplayErrorMessage</div>
     }
 
-    <div class="row">
-        <FormField Class="col-md-6 mb-3" Label="First name" For="() => Model.GivenName">
+    <div class="row g-3">
+        <FormField Class="col-md-6" Label="First name" For="() => Model.GivenName">
             <InputText id="GivenName" @bind-Value="Model.GivenName" autocomplete="given-name" class="form-control" />
         </FormField>
 
-        <FormField Class="col-md-6 mb-3" Label="Last name" For="() => Model.FamilyName">
+        <FormField Class="col-md-6" Label="Last name" For="() => Model.FamilyName">
             <InputText id="FamilyName" @bind-Value="Model.FamilyName" autocomplete="family-name" class="form-control" />
         </FormField>
     </div>
@@ -25,38 +27,40 @@
         <InputText id="Email" type="email" @bind-Value="Model.Email" autocomplete="email" class="form-control" />
     </FormField>
 
-    <div class="row">
-        <FormField Class="col-md-6 mb-3" Label="Password" For="() => Model.Password">
+    <div class="row g-3">
+        <FormField Class="col-md-6" Label="Password" For="() => Model.Password">
             <InputText id="Password" type="password" @bind-Value="Model.Password" autocomplete="new-password" class="form-control" />
         </FormField>
 
-        <FormField Class="col-md-6 mb-3" Label="Confirm password" For="() => Model.ConfirmPassword">
+        <FormField Class="col-md-6" Label="Confirm password" For="() => Model.ConfirmPassword">
             <InputText id="ConfirmPassword" type="password" @bind-Value="Model.ConfirmPassword" autocomplete="new-password" class="form-control" />
         </FormField>
     </div>
-    
-    <FormField Label="Referral (optional)" For="() => Model.ReferralCode">
+
+    <FormField Label="Referral code (optional)" For="() => Model.ReferralCode">
         <InputText id="ReferralCode" @bind-Value="Model.ReferralCode" autocomplete="off" class="form-control" />
     </FormField>
 
     <FormCheck For="() => Model.TermsAccepted">
-        <Label>I have read and agree to the  <a href="@AppRoutes.Terms" target="_blank">Terms and Conditions</a></Label>
+        <Label>I have read and agree to the <a href="@AppRoutes.Terms" target="_blank">Terms and Conditions</a></Label>
         <ChildContent>
             <InputCheckbox id="TermsAccepted" class="form-check-input" @bind-Value="Model.TermsAccepted" />
         </ChildContent>
     </FormCheck>
 
     <FormCheck For="() => Model.PrivacyAccepted">
-        <Label>I have read and agree to the  <a href="@AppRoutes.Privacy" target="_blank">Privacy Policy</a></Label>
+        <Label>I have read and agree to the <a href="@AppRoutes.Privacy" target="_blank">Privacy Policy</a></Label>
         <ChildContent>
             <InputCheckbox id="PrivacyAccepted" class="form-check-input" @bind-Value="Model.PrivacyAccepted" />
         </ChildContent>
     </FormCheck>
 
-    <button class="btn btn-dark w-100" type="submit">Register</button>
+    <div class="d-grid mt-3">
+        <button class="btn btn-primary w-100" type="submit">Create Account</button>
+    </div>
 </EditForm>
 
-<p class="text-center text-body-secondary mt-3 mb-0">
+<p class="text-center text-body-secondary small mt-3 mb-0">
     Already have an account? <a href="@AppRoutes.Login">Sign in</a>
 </p>
 

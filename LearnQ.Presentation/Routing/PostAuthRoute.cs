@@ -1,7 +1,7 @@
 using System.Security.Claims;
+using LearnQ.Application.Common.Constants;
 using LearnQ.Application.Common.Enums;
 using LearnQ.Application.Common.Models;
-using LearnQ.Presentation.Security;
 
 namespace LearnQ.Presentation.Routing;
 
@@ -14,7 +14,7 @@ public static class PostAuthRoute
             return AppRoutes.Login;
         }
 
-        var isVerified = principal.FindFirst(AppClaims.EmailVerified)?.Value == "true";
+        var isVerified = principal.FindFirst(AuthClaimTypes.EmailVerified)?.Value == "true";
         if (!isVerified)
         {
             return AppRoutes.VerifyEmail;
@@ -28,7 +28,7 @@ public static class PostAuthRoute
             return AppRoutes.OnboardingRole;
         }
 
-        var isOnboarded = principal.FindFirst(AppClaims.OnboardingCompleted)?.Value == "true";
+        var isOnboarded = principal.FindFirst(AuthClaimTypes.OnboardingCompleted)?.Value == "true";
         if (!isOnboarded)
         {
             return role == UserRole.Student
@@ -38,9 +38,9 @@ public static class PostAuthRoute
 
         if (role == UserRole.Teacher)
         {
-            var status = principal.FindFirst(AppClaims.OnboardingStatus)?.Value;
-            if (string.Equals(status, "REVIEW", StringComparison.OrdinalIgnoreCase) ||
-                string.Equals(status, "PENDING_REVIEW", StringComparison.OrdinalIgnoreCase))
+            var status = principal.FindFirst(AuthClaimTypes.OnboardingStatus)?.Value;
+            if (string.Equals(status, OnboardingConstants.Review, StringComparison.OrdinalIgnoreCase) ||
+                string.Equals(status, OnboardingConstants.PendingReview, StringComparison.OrdinalIgnoreCase))
             {
                 return AppRoutes.OnboardingStatus;
             }
@@ -75,8 +75,8 @@ public static class PostAuthRoute
         }
 
         if (user.Role == UserRole.Teacher &&
-            (string.Equals(user.OnboardingStatus, "REVIEW", StringComparison.OrdinalIgnoreCase) ||
-             string.Equals(user.OnboardingStatus, "PENDING_REVIEW", StringComparison.OrdinalIgnoreCase)))
+            (string.Equals(user.OnboardingStatus, OnboardingConstants.Review, StringComparison.OrdinalIgnoreCase) ||
+             string.Equals(user.OnboardingStatus, OnboardingConstants.PendingReview, StringComparison.OrdinalIgnoreCase)))
         {
             return AppRoutes.OnboardingStatus;
         }

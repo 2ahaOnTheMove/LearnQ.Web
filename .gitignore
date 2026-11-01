@@ -5,3 +5,14 @@
 *.user
 *.userosscache
 *.sln.docstates
+
+# User secrets
+**/Properties/secret.json
+
+# Local config
+*.local.json
+*.localhost.json
+
+# OS files
+.DS_Store
+Thumbs.db

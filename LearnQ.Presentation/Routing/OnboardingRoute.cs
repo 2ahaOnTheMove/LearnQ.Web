@@ -1,6 +1,5 @@
 using LearnQ.Application.Common.Enums;
 using LearnQ.Application.Features.Onboarding;
-using Microsoft.AspNetCore.Http;
 
 namespace LearnQ.Presentation.Routing;
 

@@ -1,22 +1,18 @@
 @using LearnQ.Application.Common.Models
 @using LearnQ.Presentation.Routing
 
-<div class="text-center mb-4">
-    <div class="fs-1 mb-2">✉️</div>
-    <h2 class="fw-bold">Verify Your Email</h2>
-    <p class="text-muted">Enter the 6-digit confirmation code sent to your email address.</p>
-</div>
+<PageHeader Title="Verify Your Email" Subtitle="Enter the 6-digit code sent to your email address." />
 
 @if (!string.IsNullOrEmpty(ErrorMessage))
 {
-    <div class="alert alert-danger" role="alert">
+    <div class="alert alert-danger py-2 small" role="alert">
         @ErrorMessage
     </div>
 }
 
 @if (!string.IsNullOrEmpty(SuccessMessage))
 {
-    <div class="alert alert-success" role="alert">
+    <div class="alert alert-success py-2 small" role="alert">
         @SuccessMessage
     </div>
 }
@@ -28,11 +24,10 @@
           novalidate>
     <DataAnnotationsValidator />
 
-    <div class="mb-4 text-center">
-        <label for="verificationCode" class="form-label fw-semibold">6-Digit Verification Code</label>
+    <div class="mb-3 text-center">
+        <label for="verificationCode" class="form-label fw-medium visually-hidden">6-Digit Verification Code</label>
         <InputText id="verificationCode"
-                   class="form-control form-control-lg text-center fw-bold fs-3 letter-spacing-2"
-                   style="letter-spacing: 0.5em; max-width: 280px; margin: 0 auto;"
+                   class="form-control text-center fw-bold fs-4 verification-code"
                    inputmode="numeric"
                    autocomplete="one-time-code"
                    pattern="\d{6}"
@@ -42,17 +37,17 @@
         <ValidationMessage For="() => Model.Code" class="invalid-feedback d-block" />
     </div>
 
-    <div class="d-grid gap-2 mb-3">
-        <button type="submit" class="btn btn-primary btn-lg" disabled="@IsSubmitting">
-            <span>Verify Email</span>
+    <div class="d-grid">
+        <button type="submit" class="btn btn-primary w-100" disabled="@IsSubmitting">
+            Verify Email
         </button>
     </div>
 </EditForm>
 
-<div class="d-flex flex-column align-items-center gap-2 mt-4 pt-3 border-top">
+<div class="d-flex flex-column align-items-center gap-2 mt-3 pt-3 border-top">
     @if (ResendCooldownSeconds > 0)
     {
-        <p class="text-muted small mb-0">
+        <p class="text-body-secondary small mb-0">
             You can request a new code in @ResendCooldownSeconds seconds.
         </p>
     }
@@ -60,15 +55,15 @@
     {
         <form method="post" action="@AppRoutes.VerifyEmail?action=resend" class="d-inline">
             <AntiforgeryToken />
-            <button type="submit" class="btn btn-link text-decoration-none p-0" disabled="@IsSubmitting">
+            <button type="submit" class="btn btn-link text-decoration-none p-0 small" disabled="@IsSubmitting">
                 Resend verification code
             </button>
         </form>
     }
 
-    <form method="post" action="@AppRoutes.Logout" class="d-inline mt-2">
+    <form method="post" action="@AppRoutes.Logout" class="d-inline mt-1">
         <AntiforgeryToken />
-        <button type="submit" class="btn btn-link text-decoration-none text-muted small p-0">
+        <button type="submit" class="btn btn-link text-decoration-none text-body-secondary small p-0">
             Log out and verify later
         </button>
     </form>

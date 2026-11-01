@@ -1,6 +1,6 @@
 @attribute [Route(AppRoutes.Login)]
 @attribute [AllowAnonymous]
-@attribute [EnableRateLimiting("login")]
+@attribute [EnableRateLimiting(RateLimitPolicies.Login)]
 @using Microsoft.AspNetCore.RateLimiting
 @inject IAuthService AuthService
 @inject NavigationManager Navigation
@@ -53,7 +53,7 @@
 
         if (result.IsFailure || result.Value is null)
         {
-            _errorMessage = "Invalid email/username or password.";
+            _errorMessage = "Invalid credentials.";
             return;
         }
 

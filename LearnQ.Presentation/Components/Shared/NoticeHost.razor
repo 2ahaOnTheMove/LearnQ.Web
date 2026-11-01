@@ -1,35 +1,62 @@
-@using LearnQ.Presentation.Security
+@using LearnQ.Presentation.Notices
+@using LearnQ.Presentation.Routing
 @inject NavigationManager Navigation
 
 @code {
     [CascadingParameter]
     private HttpContext? HttpContext { get; set; }
 
-    private (string Title, string Message)? _notice;
+    private NoticeCatalog.NoticeEntry? _notice;
     private string _closeHref = "#";
+    private int? _retryAfterSeconds;
 
     protected override void OnParametersSet()
     {
         _notice = null;
+        _retryAfterSeconds = null;
         if (HttpContext is not null)
         {
             var noticeKey = HttpContext.Request.Query["notice"].ToString();
-            if (NoticeKeys.TryGetNotice(noticeKey, out var notice))
+            if (NoticeCatalog.TryGetNotice(noticeKey, out var entry))
             {
-                _notice = notice;
+                _notice = entry;
+
+                // Parse retry parameter
+                var retryValue = HttpContext.Request.Query["retry"].ToString();
+                if (int.TryParse(retryValue, out var retrySeconds) && retrySeconds is >= 1 and <= 3600)
+                {
+                    _retryAfterSeconds = retrySeconds;
+                }
+
+                // Build close href: strip both notice and retry from query
                 var queryParams = HttpContext.Request.Query
-                    .Where(q => !string.Equals(q.Key, "notice", StringComparison.OrdinalIgnoreCase))
+                    .Where(q => !string.Equals(q.Key, "notice", StringComparison.OrdinalIgnoreCase)
+                             && !string.Equals(q.Key, "retry", StringComparison.OrdinalIgnoreCase))
                     .Select(q => $"{Uri.EscapeDataString(q.Key)}={Uri.EscapeDataString(q.Value.ToString())}");
                 var qs = string.Join("&", queryParams);
-                _closeHref = string.IsNullOrEmpty(qs)
-                    ? HttpContext.Request.Path.Value ?? "/"
-                    : $"{HttpContext.Request.Path.Value}?{qs}";
+
+                // For session-expired and registered, close goes to login
+                if (noticeKey == NoticeCatalog.NoticeKeys.SessionExpired || noticeKey == NoticeCatalog.NoticeKeys.Registered)
+                {
+                    _closeHref = AppRoutes.Login;
+                }
+                else
+                {
+                    var path = HttpContext.Request.Path.Value ?? "/";
+                    _closeHref = string.IsNullOrEmpty(qs) ? path : $"{path}?{qs}";
+                }
             }
         }
     }
 }
 
-@if (_notice.HasValue)
+@if (_notice is not null)
 {
-    <NoticeModal Title="@_notice.Value.Title" Message="@_notice.Value.Message" CloseHref="@_closeHref" />
+    <NoticeModal
+        Title="@_notice.Title"
+        Message="@_notice.Message"
+        CloseHref="@_closeHref"
+        CloseText="@_notice.CloseText"
+        Severity="@_notice.Severity"
+        RetryAfterSeconds="@_retryAfterSeconds" />
 }

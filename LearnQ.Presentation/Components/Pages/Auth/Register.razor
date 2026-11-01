@@ -1,3 +1,6 @@
+@using LearnQ.Presentation.Authentication
+@using LearnQ.Presentation.Notices
+@layout AuthWideLayout
 @attribute [Route(AppRoutes.Register)]
 @attribute [AllowAnonymous]
 @inject IClientApi Api
@@ -62,6 +65,6 @@
             }
         }
 
-        Navigation.NavigateTo($"{AppRoutes.Login}?notice={NoticeKeys.Registered}");
+        Navigation.NavigateTo($"{AppRoutes.Login}?notice={NoticeCatalog.NoticeKeys.Registered}");
     }
 }

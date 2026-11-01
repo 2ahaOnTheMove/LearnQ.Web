@@ -1,4 +1,4 @@
-namespace LearnQ.Infrastructure.Api.Common;
+namespace LearnQ.Infrastructure.Api.Auth;
 
 public static class AuthEndpoints
 {

@@ -8,4 +8,3 @@ public sealed record RegisterClientRequest(
     string Password,
     bool TermsAccepted,
     bool PrivacyAccepted);
-    

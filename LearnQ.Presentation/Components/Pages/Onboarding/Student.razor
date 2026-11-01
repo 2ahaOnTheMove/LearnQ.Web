@@ -1,5 +1,6 @@
 @attribute [Route(AppRoutes.OnboardingStudent)]
 @attribute [Authorize(Policy = AuthPolicies.StudentOnly)]
+@using LearnQ.Presentation.Authentication
 @using static Microsoft.AspNetCore.Components.Web.RenderMode
 @rendermode InteractiveServer
 @inject IOnboardingApi OnboardingApi
@@ -8,21 +9,18 @@
 
 <XPageTitle Name="Student Onboarding" />
 
-<div class="mb-4">
-    <h2 class="h3 fw-bold mb-2">Student Profile Setup</h2>
-    <p class="text-muted">Tell us who will be learning so we can tailor the experience.</p>
-</div>
+<PageHeader Title="Student Profile Setup" Subtitle="Tell us who will be learning so we can tailor the experience." />
 
 @if (!string.IsNullOrWhiteSpace(_apiError?.Message))
 {
-    <div class="alert alert-danger" role="alert">@_apiError.Message</div>
+    <div class="alert alert-danger py-2 small" role="alert">@_apiError.Message</div>
 }
 
 @if (_showSwitchWarning)
 {
-    <div class="alert alert-warning border-warning shadow-sm mb-4" role="alert">
-        <h5 class="alert-heading fw-bold mb-2">Change Account Type?</h5>
-        <p class="mb-3">Switching who this account is for will discard any learner information you have entered so far.</p>
+    <div class="alert alert-warning py-2 mb-3" role="alert">
+        <h6 class="fw-semibold mb-1">Change Account Type?</h6>
+        <p class="mb-0 small">Switching who this account is for will discard any learner information you have entered so far.</p>
         <div class="d-flex gap-2">
             <button type="button" class="btn btn-warning btn-sm fw-semibold" @onclick="ConfirmSwitchAccountType">
                 Yes, switch and reset
@@ -34,8 +32,8 @@
     </div>
 }
 
-<div class="mb-4">
-    <label class="form-label fw-bold d-block mb-2">Who is this account for?</label>
+<div class="mb-3">
+    <label class="form-label fw-medium d-block mb-2">Who is this account for?</label>
     <div class="d-flex gap-4">
         <div class="form-check">
             <input class="form-check-input"
@@ -75,8 +73,8 @@
         <DataAnnotationsValidator />
         <BootstrapValidation />
 
-        <div class="p-3 bg-light rounded border mb-4">
-            <h5 class="fw-bold mb-3">Your Learner Details</h5>
+        <div class="p-3 bg-light rounded border mb-3">
+            <h6 class="fw-semibold mb-3">Your Learner Details</h6>
             <LearnerFields Model="_model.SelfLearner"
                            ShowName="false"
                            Disabled="@_isSubmitting"
@@ -84,10 +82,10 @@
         </div>
 
         <div class="d-flex justify-content-between align-items-center">
-            <a href="@AppRoutes.OnboardingRole" class="btn btn-link text-decoration-none text-muted" disabled="@_isSubmitting">
+            <a href="@AppRoutes.OnboardingRole" class="btn btn-link text-decoration-none text-body-secondary small" disabled="@_isSubmitting">
                 Back to role
             </a>
-            <button type="submit" class="btn btn-primary px-4" disabled="@(_isSubmitting || _isUploading)">
+            <button type="submit" class="btn btn-primary" disabled="@(_isSubmitting || _isUploading)">
                 @if (_isSubmitting)
                 {
                     <span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
@@ -104,8 +102,8 @@
 else if (_model.ForSelf == false)
 {
     @* FOR SOMEONE ELSE BRANCH *@
-    <div class="mb-4">
-        <div class="card p-3 mb-4 bg-light border">
+    <div class="mb-3">
+        <div class="card p-3 mb-3 bg-light border">
             <div class="form-check">
                 <input class="form-check-input @(_showGuardianError && !_model.GuardianConfirmed ? "is-invalid" : "")"
                        type="checkbox"
@@ -127,9 +125,9 @@ else if (_model.ForSelf == false)
 
         @if (_showLearnerDeleteConfirm.HasValue)
         {
-            <div class="alert alert-danger border-danger shadow-sm mb-4" role="alert">
-                <h6 class="alert-heading fw-bold mb-2">Remove Learner?</h6>
-                <p class="mb-3 small">Are you sure you want to remove this learner from your account?</p>
+            <div class="alert alert-danger py-2 mb-3" role="alert">
+                <h6 class="fw-semibold mb-1">Remove Learner?</h6>
+                <p class="mb-0 small">Are you sure you want to remove this learner from your account?</p>
                 <div class="d-flex gap-2">
                     <button type="button" class="btn btn-danger btn-sm" @onclick="() => ConfirmDeleteLearner(_showLearnerDeleteConfirm.Value)">
                         Yes, remove
@@ -143,8 +141,8 @@ else if (_model.ForSelf == false)
 
         @if (_editingLearner is not null)
         {
-            <div class="card p-4 border-primary shadow-sm mb-4">
-                <h5 class="fw-bold mb-3">@(_isNewLearner ? "Add New Learner" : "Edit Learner")</h5>
+            <div class="card p-3 border-primary mb-3">
+                <h6 class="fw-semibold mb-3">@(_isNewLearner ? "Add New Learner" : "Edit Learner")</h6>
                 <EditForm EditContext="_learnerEditContext" OnValidSubmit="SaveActiveLearner" novalidate>
                     <DataAnnotationsValidator />
                     <BootstrapValidation />
@@ -167,9 +165,9 @@ else if (_model.ForSelf == false)
         }
         else
         {
-            <div class="mb-4">
+            <div class="mb-3">
                 <div class="d-flex justify-content-between align-items-center mb-3">
-                    <h5 class="fw-bold mb-0">Learners (@_model.SomeoneElseLearners.Count / @OnboardingConstants.MaxLearners)</h5>
+                    <h6 class="fw-semibold mb-0">Learners (@_model.SomeoneElseLearners.Count / @OnboardingConstants.MaxLearners)</h6>
                     @if (_model.SomeoneElseLearners.Count < OnboardingConstants.MaxLearners)
                     {
                         <button type="button" class="btn btn-outline-primary btn-sm" @onclick="StartAddLearner" disabled="@_isSubmitting">
@@ -184,8 +182,8 @@ else if (_model.ForSelf == false)
 
                 @if (_model.SomeoneElseLearners.Count == 0)
                 {
-                    <div class="text-center p-4 border rounded bg-light text-muted">
-                        <p class="mb-2">No learners added yet.</p>
+                    <div class="text-center p-3 border rounded bg-light text-body-secondary">
+                        <p class="mb-2 small">No learners added yet.</p>
                         <button type="button" class="btn btn-primary btn-sm" @onclick="StartAddLearner" disabled="@_isSubmitting">
                             Add your first learner
                         </button>
@@ -200,12 +198,14 @@ else if (_model.ForSelf == false)
                                 <div class="d-flex align-items-center gap-3">
                                     @if (!string.IsNullOrWhiteSpace(learner.AvatarUrl))
                                     {
-                                        <img src="@learner.AvatarUrl" alt="@learner.GivenName" class="rounded-circle object-fit-cover border" style="width: 44px; height: 44px;" />
+                                        <img src="@learner.AvatarUrl" alt="@learner.GivenName" class="rounded-circle object-fit-cover border avatar-sm" />
                                     }
                                     else
                                     {
-                                        <div class="rounded-circle bg-light border d-flex align-items-center justify-content-center text-muted" style="width: 44px; height: 44px;">
-                                            👤
+                                        <div class="rounded-circle bg-light border d-flex align-items-center justify-content-center text-muted avatar-sm">
+                                            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="currentColor" viewBox="0 0 16 16">
+                                                <path d="M3 14s-1 0-1-1 1-4 6-4 6 3 6 4-1 1-1 1zm5-6a3 3 0 1 0 0-6 3 3 0 0 0 0 6"/>
+                                            </svg>
                                         </div>
                                     }
                                     <div>
@@ -234,11 +234,11 @@ else if (_model.ForSelf == false)
                 }
             </div>
 
-            <div class="d-flex justify-content-between align-items-center mt-4">
-                <a href="@AppRoutes.OnboardingRole" class="btn btn-link text-decoration-none text-muted" disabled="@_isSubmitting">
+            <div class="d-flex justify-content-between align-items-center mt-3 mt-md-4">
+                <a href="@AppRoutes.OnboardingRole" class="btn btn-link text-decoration-none text-body-secondary small" disabled="@_isSubmitting">
                     Back to role
                 </a>
-                <button type="button" class="btn btn-primary px-4" @onclick="HandleSomeoneElseSubmit" disabled="@(_isSubmitting || _isUploading)">
+                <button type="button" class="btn btn-primary" @onclick="HandleSomeoneElseSubmit" disabled="@(_isSubmitting || _isUploading)">
                     @if (_isSubmitting)
                     {
                         <span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>

@@ -1,4 +1,4 @@
-namespace LearnQ.Infrastructure.Api.Common;
+namespace LearnQ.Infrastructure.Api.Onboarding;
 
 internal static class OnboardingEndpoints
 {

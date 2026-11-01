@@ -1,7 +1,84 @@
-a {
-    text-decoration: none;
+/* LearnQ Design Tokens — Emerald brand, Bootstrap 5.3 overrides */
+
+:root {
+    /* Primary emerald */
+    --bs-primary: #047857;
+    --bs-primary-rgb: 4, 120, 87;
+    --bs-secondary-rgb: 108, 117, 125;
+
+    /* Links */
+    --bs-link-color: #047857;
+    --bs-link-color-rgb: 4, 120, 87;
+    --bs-link-hover-color: #065f46;
+    --bs-link-hover-color-rgb: 6, 95, 70;
+
+    /* Solid primary button */
+    --bs-btn-bg: #047857;
+    --bs-btn-border-color: #047857;
+    --bs-btn-color: #fff;
+    --bs-btn-hover-bg: #065f46;
+    --bs-btn-hover-border-color: #064e3b;
+    --bs-btn-active-bg: #064e3b;
+    --bs-btn-active-border-color: #064e3b;
+    --bs-btn-disabled-bg: #6b9080;
+    --bs-btn-disabled-border-color: #6b9080;
+
+    /* Outline primary button */
+    --bs-btn-outline-color: #047857;
+    --bs-btn-outline-bg: transparent;
+    --bs-btn-outline-border-color: #047857;
+    --bs-btn-outline-hover-color: #fff;
+    --bs-btn-outline-hover-bg: #047857;
+    --bs-btn-outline-hover-border-color: #047857;
+    --bs-btn-outline-active-color: #fff;
+    --bs-btn-outline-active-bg: #064e3b;
+    --bs-btn-outline-active-border-color: #064e3b;
+
+    /* Subtle backgrounds */
+    --bs-primary-bg-subtle: #ecfdf5;
+    --bs-primary-border-subtle: #a7f3d0;
+
+    /* Focus ring */
+    --bs-focus-ring-color: rgba(4, 120, 87, 0.25);
+
+    /* Border radius */
+    --bs-border-radius: 0.5rem;
 }
 
-a:hover {
-    text-decoration: underline;
+/* Max-width helpers for centered cards */
+.auth-card { width: 100%; max-width: 420px; }
+.auth-card--wide { max-width: 640px; }
+.onboarding-card { max-width: 640px; }
+.onboarding-card-wide { max-width: 720px; }
+
+/* Verification code input */
+.verification-code {
+    letter-spacing: 0.5em;
+    max-width: 280px;
+    margin: 0 auto;
+}
+
+/* Avatar sizes */
+.avatar-sm { width: 44px; height: 44px; flex-shrink: 0; }
+.avatar-md { width: 72px; height: 72px; flex-shrink: 0; }
+
+/* Step indicator */
+.step-circle { width: 32px; height: 32px; flex-shrink: 0; }
+.step-progress { height: 2px; }
+
+/* Modal static backdrop */
+.modal-backdrop-static { background-color: rgba(0, 0, 0, 0.5); }
+
+/* Hero text max-width */
+.hero-text { max-width: 520px; }
+
+/* Links */
+a { text-decoration: none; }
+
+/* Navbar height for scroll-padding */
+:root {
+    --app-navbar-height: 52px;
+}
+html {
+    scroll-padding-top: var(--app-navbar-height);
 }

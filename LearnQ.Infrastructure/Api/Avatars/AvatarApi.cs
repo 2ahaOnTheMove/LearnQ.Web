@@ -3,6 +3,7 @@ using System.Net.Http.Json;
 using LearnQ.Application.Common.Interfaces;
 using LearnQ.Application.Common.Models;
 using LearnQ.Infrastructure.Api.Common;
+using LearnQ.Infrastructure.Api.Onboarding;
 
 namespace LearnQ.Infrastructure.Api.Avatars;
 
