@@ -36,14 +36,14 @@
     </div>
 
     <FormCheck For="() => Model.TermsAccepted">
-        <Label>I accept the <a href="/terms" target="_blank">Terms of Service</a></Label>
+        <Label>I accept the <a href="@AppRoutes.Terms" target="_blank">Terms of Service</a></Label>
         <ChildContent>
             <InputCheckbox id="TermsAccepted" class="form-check-input" @bind-Value="Model.TermsAccepted" />
         </ChildContent>
     </FormCheck>
 
     <FormCheck For="() => Model.PrivacyAccepted">
-        <Label>I accept the <a href="/privacy" target="_blank">Privacy Policy</a></Label>
+        <Label>I accept the <a href="@AppRoutes.Privacy" target="_blank">Privacy Policy</a></Label>
         <ChildContent>
             <InputCheckbox id="PrivacyAccepted" class="form-check-input" @bind-Value="Model.PrivacyAccepted" />
         </ChildContent>
@@ -53,15 +53,20 @@
 </EditForm>
 
 <p class="text-center text-body-secondary mt-3 mb-0">
-    Already have an account? <a href="/auth/login">Sign in</a>
+    Already have an account? <a href="@AppRoutes.Login">Sign in</a>
 </p>
 
 @code {
     [SupplyParameterFromForm]
-    private RegisterInput Model { get; set; } = new();
+    public RegisterInput Model { get; set; } = default!;
 
-    [Parameter] public EventCallback<RegisterInput> OnSubmit { get; set; }
-    [Parameter] public string? ErrorMessage { get; set; }
+    [Parameter, EditorRequired]
+    public EventCallback<RegisterInput> OnSubmit { get; set; }
+
+    [Parameter]
+    public string? ErrorMessage { get; set; }
+
+    protected override void OnInitialized() => Model ??= new();
 
     private Task HandleValidSubmit() => OnSubmit.InvokeAsync(Model);
 }
