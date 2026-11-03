@@ -1,0 +1,126 @@
+<PageHeader Title="Resend Verification Code" Subtitle="We'll send a new 6-digit code to your email address." />
+
+@if (!string.IsNullOrEmpty(ErrorMessage))
+{
+    <div class="alert alert-danger py-2 small" role="alert">
+        @ErrorMessage
+    </div>
+}
+
+@if (!string.IsNullOrEmpty(SuccessMessage))
+{
+    <div class="alert alert-success py-2 small" role="alert">
+        @SuccessMessage
+    </div>
+}
+
+<div class="text-center mb-3">
+    <p class="text-body-secondary small">
+        Didn't receive the code? Click below to send a new one.
+    </p>
+</div>
+
+<div class="d-grid">
+    <button type="button" class="btn btn-primary w-100"
+            disabled="@(IsSubmitting || _cooldownRemaining > 0)"
+            @onclick="HandleResend">
+        @if (_cooldownRemaining > 0)
+        {
+            <text>Wait @_cooldownRemaining s</text>
+        }
+        else
+        {
+            <text>Resend Code</text>
+        }
+    </button>
+</div>
+
+<div class="d-flex flex-column align-items-center gap-2 mt-3 pt-3 border-top">
+    <a href="@AppRoutes.VerifyEmail" class="btn btn-link text-decoration-none p-0 small">
+        Back to verification
+    </a>
+
+    <form method="post" action="@AppRoutes.Logout" class="d-inline mt-1" formname="logout-form-resend">
+        <AntiforgeryToken />
+        <button type="submit" class="btn btn-link text-decoration-none text-body-secondary small p-0">
+            Log out and verify later
+        </button>
+    </form>
+</div>
+
+@implements IDisposable
+
+@code {
+    [Parameter, EditorRequired] public EventCallback OnResend { get; set; }
+    [Parameter] public string? ErrorMessage { get; set; }
+    [Parameter] public string? SuccessMessage { get; set; }
+    /// <summary>Server-provided timestamp (ms epoch) when resend becomes available again.</summary>
+    [Parameter] public long? ResendAvailableAt { get; set; }
+    [Parameter] public bool IsSubmitting { get; set; }
+
+    private int _cooldownRemaining;
+    private PeriodicTimer? _cooldownTimer;
+
+    protected override void OnParametersSet()
+    {
+        // If server gave us a future timestamp, derive the countdown from it
+        if (ResendAvailableAt.HasValue)
+        {
+            long now = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
+            long remaining = (ResendAvailableAt.Value - now) / 1000;
+            _cooldownRemaining = Math.Max(0, (int)remaining);
+        }
+
+        // Start timer if there is remaining cooldown
+        if (_cooldownRemaining > 0 && _cooldownTimer is null)
+        {
+            StartCooldownTimer();
+        }
+        else if (_cooldownRemaining <= 0 && _cooldownTimer is not null)
+        {
+            _cooldownTimer.Dispose();
+            _cooldownTimer = null;
+        }
+    }
+
+    private void StartCooldownTimer()
+    {
+        _cooldownTimer?.Dispose();
+        _cooldownTimer = new PeriodicTimer(TimeSpan.FromSeconds(1));
+        _ = TickAsync(); // fire-and-forget: timer runs independently
+    }
+
+    private async Task TickAsync()
+    {
+        try
+        {
+            while (_cooldownTimer is not null && await _cooldownTimer.WaitForNextTickAsync())
+            {
+                _cooldownRemaining--;
+                if (_cooldownRemaining <= 0)
+                {
+                    _cooldownRemaining = 0;
+                    _cooldownTimer.Dispose();
+                    _cooldownTimer = null;
+                }
+                await InvokeAsync(StateHasChanged);
+            }
+        }
+        catch (ObjectDisposedException)
+        {
+            // Timer was disposed during disposal
+        }
+    }
+
+    private async Task HandleResend()
+    {
+        if (_cooldownRemaining > 0) return;
+        await OnResend.InvokeAsync();
+    }
+
+    public void Dispose()
+    {
+        _cooldownTimer?.Dispose();
+        _cooldownTimer = null;
+    }
+}

@@ -1,0 +1,31 @@
+@using LearnQ.Presentation.Routing
+@using Microsoft.AspNetCore.Components.Web
+
+@implements IAsyncDisposable
+
+@code {
+    [Inject]
+    private NavigationManager Navigation { get; set; } = default!;
+
+    [CascadingParameter]
+    private Task<AuthenticationState>? AuthenticationState { get; set; }
+
+    private bool _redirected = false;
+
+    protected override async Task OnInitializedAsync()
+    {
+        if (_redirected)
+            return;
+
+        var state = await AuthenticationState!;
+        if (!state.User.Identity?.IsAuthenticated ?? true)
+        {
+            _redirected = true;
+            // Use NavigateTo with forceLoad to trigger a full page reload,
+            // ensuring the authentication cookie is re-evaluated.
+            Navigation.NavigateTo(AppRoutes.Login, forceLoad: true);
+        }
+    }
+
+    public ValueTask DisposeAsync() => default;
+}
