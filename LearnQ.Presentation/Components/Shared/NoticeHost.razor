@@ -9,11 +9,13 @@
     private NoticeCatalog.NoticeEntry? _notice;
     private string _closeHref = "#";
     private int? _retryAfterSeconds;
+    private string? _scope;
 
     protected override void OnParametersSet()
     {
         _notice = null;
         _retryAfterSeconds = null;
+        _scope = null;
         if (HttpContext is not null)
         {
             var noticeKey = HttpContext.Request.Query["notice"].ToString();
@@ -28,10 +30,14 @@
                     _retryAfterSeconds = retrySeconds;
                 }
 
-                // Build close href: strip both notice and retry from query
+                // Parse scope parameter
+                _scope = HttpContext.Request.Query["scope"].ToString();
+
+                // Build close href: strip notice, retry, and scope from query
                 var queryParams = HttpContext.Request.Query
                     .Where(q => !string.Equals(q.Key, "notice", StringComparison.OrdinalIgnoreCase)
-                             && !string.Equals(q.Key, "retry", StringComparison.OrdinalIgnoreCase))
+                             && !string.Equals(q.Key, "retry", StringComparison.OrdinalIgnoreCase)
+                             && !string.Equals(q.Key, "scope", StringComparison.OrdinalIgnoreCase))
                     .Select(q => $"{Uri.EscapeDataString(q.Key)}={Uri.EscapeDataString(q.Value.ToString())}");
                 var qs = string.Join("&", queryParams);
 
@@ -58,5 +64,6 @@
         CloseHref="@_closeHref"
         CloseText="@_notice.CloseText"
         Severity="@_notice.Severity"
-        RetryAfterSeconds="@_retryAfterSeconds" />
+        RetryAfterSeconds="@_retryAfterSeconds"
+        Scope="@_scope" />
 }

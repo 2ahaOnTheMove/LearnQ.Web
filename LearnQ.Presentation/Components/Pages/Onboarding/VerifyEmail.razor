@@ -1,0 +1,201 @@
+@using static Microsoft.AspNetCore.Components.Web.RenderMode
+@attribute [Route(AppRoutes.VerifyEmail)]
+@attribute [Authorize(Policy = AuthPolicies.AuthenticatedOnly)]
+@rendermode InteractiveServer
+@inject IAuthService AuthService
+@inject NavigationManager Navigation
+@inject Microsoft.AspNetCore.Components.Authorization.AuthenticationStateProvider AuthenticationStateProvider
+
+<XPageTitle Name="Verify Email" />
+<VerifyEmailForm @ref="_formRef"
+                 Title="Verify your email"
+                 Subtitle="@_subtitle"
+                 OnSubmit="HandleVerify"
+                 OnResend="HandleResend"
+                 ErrorMessage="@_errorMessage"
+                 SuccessMessage="@_successMessage"
+                 IsSubmitting="@_isSubmitting"
+                 IsLocked="@_isLocked"
+                 IsDailyLimitReached="@_isDailyLimitReached"
+                 ResendAvailableAt="@_resendAvailableAt" />
+
+@code {
+    [SupplyParameterFromQuery]
+    private string? ReturnUrl { get; set; }
+
+    private VerifyEmailForm? _formRef;
+
+    private string? _errorMessage;
+    private string? _successMessage;
+    private string? _subtitle;
+    private long? _resendAvailableAt;
+    private bool _isSubmitting;
+    private bool _isLocked;
+    private bool _isDailyLimitReached;
+    private string? _userEmail;
+
+    protected override async Task OnInitializedAsync()
+    {
+        // Get auth state - works in both static render and interactive mode
+        var authState = await AuthenticationStateProvider.GetAuthenticationStateAsync();
+        var user = authState.User;
+
+        // Redirect already-verified users away from this page
+        var isVerified = user.FindFirst(AuthClaimTypes.EmailVerified)?.Value == "true";
+        if (isVerified)
+        {
+            var destination = PostAuthRoute.GetPostAuthDestination(user, ReturnUrl);
+            Navigation.NavigateTo(destination, forceLoad: true);
+            return;
+        }
+
+        // Fetch /me to get email and resendAvailableAt.
+        // GetCurrentUserAsync now supports null HttpContext via IHttpContextAccessor fallback.
+        var meResult = await AuthService.GetCurrentUserAsync();
+        if (meResult.IsSuccess && meResult.Value is not null)
+        {
+            _userEmail = meResult.Value.Email;
+            _resendAvailableAt = meResult.Value.ResendAvailableAt;
+            _subtitle = MaskEmail(_userEmail);
+        }
+        else
+        {
+            // If we can't get /me, the user might not be authenticated
+            Navigation.NavigateTo(AppRoutes.Login, forceLoad: true);
+            return;
+        }
+    }
+
+    private string MaskEmail(string email)
+    {
+        if (string.IsNullOrEmpty(email) || !email.Contains('@'))
+            return "your email";
+
+        var parts = email.Split('@');
+        var local = parts[0];
+        var domain = parts[1];
+
+        string maskedLocal;
+        if (local.Length <= 2)
+        {
+            maskedLocal = local[0] + "*";
+        }
+        else
+        {
+            maskedLocal = local[0] + "***";
+        }
+
+        return $"We sent a 6-digit code to {maskedLocal}@{domain}";
+    }
+
+    private async Task HandleVerify(VerifyEmailInput input)
+    {
+        _errorMessage = null;
+        _successMessage = null;
+        _isSubmitting = true;
+        _isLocked = false;
+        _isDailyLimitReached = false;
+
+        // VerifyEmailAsync and RefreshPrincipalAsync support null HttpContext
+        // via IHttpContextAccessor fallback, so they work in interactive Blazor mode.
+        var result = await AuthService.VerifyEmailAsync(input.Code);
+        if (result.IsFailure)
+        {
+            _isSubmitting = false;
+
+            var error = result.Error;
+            if (error is not null)
+            {
+                _errorMessage = MapVerifyError(error);
+
+                // Check for lockout conditions
+                if (error.Code == "VERIFICATION_ATTEMPTS_EXCEEDED")
+                {
+                    _isLocked = true;
+                }
+            }
+            else
+            {
+                _errorMessage = "Something went wrong. Please try again.";
+            }
+
+            // Clear digits after error
+            _formRef?.ClearDigits();
+
+            return;
+        }
+
+        // Success — refresh the cookie claims
+        _successMessage = "Email verified!";
+        var refreshResult = await AuthService.RefreshPrincipalAsync();
+        if (refreshResult.IsSuccess && refreshResult.Value is not null)
+        {
+            var destination = PostAuthRoute.GetPostAuthDestination(refreshResult.Value, ReturnUrl);
+            Navigation.NavigateTo(destination, forceLoad: true);
+            return;
+        }
+
+        // Fallback navigation
+        Navigation.NavigateTo(AppRoutes.Onboarding, forceLoad: true);
+    }
+
+    private string MapVerifyError(ApiError error)
+    {
+        return error.Code switch
+        {
+            "INVALID_VERIFICATION_CODE" => "That code isn't right. Check it and try again.",
+            "VERIFICATION_CODE_EXPIRED" => "That code has expired. Please request a new one.",
+            "VERIFICATION_ATTEMPTS_EXCEEDED" => "Too many incorrect attempts. Please request a new code.",
+            "ALREADY_VERIFIED" => "Your email is already verified.",
+            _ => error.Message ?? "Something went wrong. Please try again."
+        };
+    }
+
+    private async Task HandleResend()
+    {
+        _errorMessage = null;
+        _successMessage = null;
+        _isDailyLimitReached = false;
+
+        var result = await AuthService.ResendVerificationAsync();
+
+        if (result.IsSuccess && result.Value is not null)
+        {
+            // Start a 60-second cooldown from the server's retry-after value
+            int retryAfter = Math.Max(result.Value.RetryAfterSeconds, 30);
+            _resendAvailableAt = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds()
+                + retryAfter * 1000;
+            _successMessage = "A new code is on its way. Check your inbox.";
+
+            // Clear digits so the user enters the new code
+            _formRef?.ClearDigits();
+        }
+        else
+        {
+            var error = result.Error;
+            if (error is not null)
+            {
+                if (error.Code == "RESEND_COOLDOWN" || error.Status == 429)
+                {
+                    // Set the cooldown — default 60s if server doesn't specify
+                    int retryAfter = 60;
+                    _resendAvailableAt = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds() + retryAfter * 1000;
+                    _errorMessage = "Please wait before requesting another code.";
+                }
+                else if (error.Code == "RESEND_LIMIT_REACHED")
+                {
+                    _isDailyLimitReached = true;
+                    _errorMessage = "You've reached the daily resend limit. Please try again tomorrow.";
+                }
+                else
+                {
+                    _errorMessage = error.Message ?? "Unable to resend code right now. Please try again.";
+                }
+            }
+            else
+            {
+                _errorMessage = "Unable to resend code right now. Please try again.";
+            }
+        }
+    }
+}

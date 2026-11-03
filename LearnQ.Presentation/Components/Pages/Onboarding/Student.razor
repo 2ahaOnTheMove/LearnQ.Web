@@ -7,9 +7,9 @@
 @inject IAuthService AuthService
 @inject NavigationManager Navigation
 
-<XPageTitle Name="Student Onboarding" />
+<XPageTitle Name="Student Profile" />
 
-<PageHeader Title="Student Profile Setup" Subtitle="Tell us who will be learning so we can tailor the experience." />
+<PageHeader Title="Your Profile" Subtitle="Tell us who will be learning so we can tailor the experience." />
 
 @if (!string.IsNullOrWhiteSpace(_apiError?.Message))
 {
@@ -285,7 +285,7 @@ else if (_model.ForSelf == false)
             var redirect = OnboardingRoute.GetGuardRedirect(statusResult.Value, AppRoutes.OnboardingStudent);
             if (redirect is not null)
             {
-                Navigation.NavigateTo(redirect);
+                Navigation.NavigateTo(redirect, forceLoad: true);
             }
         }
     }
@@ -401,7 +401,7 @@ else if (_model.ForSelf == false)
         }
 
         await AuthService.RefreshPrincipalAsync();
-        Navigation.NavigateTo(AppRoutes.Dashboard);
+        Navigation.NavigateTo(AppRoutes.Dashboard, forceLoad: true);
     }
 
     private void StartAddLearner()
@@ -504,6 +504,6 @@ else if (_model.ForSelf == false)
         }
 
         await AuthService.RefreshPrincipalAsync();
-        Navigation.NavigateTo(AppRoutes.Dashboard);
+        Navigation.NavigateTo(AppRoutes.Dashboard, forceLoad: true);
     }
 }

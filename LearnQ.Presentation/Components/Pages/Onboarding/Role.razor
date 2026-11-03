@@ -1,5 +1,7 @@
-@using LearnQ.Presentation.Authentication
+@using static Microsoft.AspNetCore.Components.Web.RenderMode
 @attribute [Route(AppRoutes.OnboardingRole)]
+@attribute [Authorize(Policy = AuthPolicies.EmailVerified)]
+@rendermode InteractiveServer
 @inject IOnboardingApi OnboardingApi
 @inject IAuthService AuthService
 @inject NavigationManager Navigation
@@ -11,26 +13,18 @@
                    IsSubmitting="@_isSubmitting" />
 
 @code {
-    [CascadingParameter]
-    private HttpContext? HttpContext { get; set; }
-
     private ApiError? _apiError;
     private bool _isSubmitting;
 
     protected override async Task OnInitializedAsync()
     {
-        if (OnboardingRoute.ShouldSkipGuard(HttpContext))
-        {
-            return;
-        }
-
         var statusResult = await OnboardingApi.GetStatusAsync();
         if (statusResult.IsSuccess && statusResult.Value is not null)
         {
             var redirect = OnboardingRoute.GetGuardRedirect(statusResult.Value, AppRoutes.OnboardingRole);
             if (redirect is not null)
             {
-                Navigation.NavigateTo(redirect);
+                Navigation.NavigateTo(redirect, forceLoad: true);
             }
         }
     }
@@ -57,15 +51,13 @@
             return;
         }
 
-        if (HttpContext is not null)
-        {
-            await AuthService.RefreshPrincipalAsync(HttpContext);
-        }
+        // RefreshPrincipalAsync uses IHttpContextAccessor fallback, no HttpContext needed
+        await AuthService.RefreshPrincipalAsync();
 
         var destination = input.Role.Value == UserRole.Student
             ? AppRoutes.OnboardingStudent
             : AppRoutes.OnboardingTeacher;
 
-        Navigation.NavigateTo(destination);
+        Navigation.NavigateTo(destination, forceLoad: true);
     }
 }

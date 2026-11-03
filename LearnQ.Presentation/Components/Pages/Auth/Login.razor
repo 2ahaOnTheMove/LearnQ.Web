@@ -1,63 +1,111 @@
 @attribute [Route(AppRoutes.Login)]
 @attribute [AllowAnonymous]
-@attribute [EnableRateLimiting(RateLimitPolicies.Login)]
-@using Microsoft.AspNetCore.RateLimiting
-@inject IAuthService AuthService
-@inject NavigationManager Navigation
+@* 
+    IMPORTANT: This page must NOT use InteractiveServer render mode.
+    
+    Login uses a native browser form POST to /auth/login. The endpoint performs
+    SignInAsync and the HTTP response sets the authentication cookie. If this page
+    used InteractiveServer, the Blazor circuit would attempt to establish before
+    the user is authenticated, and the native form POST could be interfered with
+    by SignalR. Static rendering ensures the browser submits the form directly
+    to the ASP.NET Core endpoint as a genuine HTTP POST request.
+*@
 
 <XPageTitle Name="Sign In" />
 
-<LoginForm OnSubmit="HandleLogin"
-           ErrorMessage="@_errorMessage"
-           IsSubmitting="@_isSubmitting" />
+@* 
+    CRITICAL: Login must use a native browser form POST, not a Blazor component event handler.
+    
+    SignInAsync sets the authentication cookie on the HTTP response's Set-Cookie header.
+    A Blazor interactive component event handler runs inside an established SignalR circuit
+    — it is NOT a browser-originated HTTP request, so the Set-Cookie header cannot be sent
+    to the browser. The login form below posts directly to the ASP.NET Core /auth/login
+    endpoint, which performs SignInAsync and returns the Set-Cookie header in the HTTP
+    response, establishing the browser authentication session.
+*@
+
+@if (!string.IsNullOrEmpty(RegisterSuccess))
+{
+    <div class="alert alert-success py-2 small" role="alert">
+        Registration successful! Please sign in with your credentials.
+    </div>
+}
+else if (!string.IsNullOrEmpty(LoginError))
+{
+    <div class="alert alert-danger py-2 small" role="alert">
+        @LoginErrorMessage
+    </div>
+}
+
+<form method="post" action="@AppRoutes.Login" class="mt-3">
+    <AntiforgeryToken />
+    @if (!string.IsNullOrEmpty(SafeReturnUrl))
+    {
+        <input type="hidden" name="returnUrl" value="@SafeReturnUrl" />
+    }
+    
+    <FormField Label="Identifier" For="() => Model.Identifier">
+        <input id="Identifier"
+               name="identifier"
+               type="text"
+               class="form-control @(HasError("identifier") ? "is-invalid" : "")"
+               autocomplete="username"
+               required
+               value="@Model.Identifier" />
+    </FormField>
+
+    <FormField Label="Password" For="() => Model.Password">
+        <input id="Password"
+               name="password"
+               type="password"
+               class="form-control @(HasError("password") ? "is-invalid" : "")"
+               autocomplete="current-password"
+               required />
+    </FormField>
+
+    <div class="mb-3">
+        <div class="form-check">
+            <input id="RememberMe"
+                   name="rememberMe"
+                   type="checkbox"
+                   class="form-check-input"
+                   value="true"
+                   @(Model.RememberMe ? "checked" : "") />
+            <label for="RememberMe" class="form-check-label">Remember me for 30 days</label>
+        </div>
+    </div>
+
+    <div class="d-grid mt-3">
+        <button type="submit" class="btn btn-primary w-100">
+            Sign In
+        </button>
+    </div>
+</form>
+
+<p class="text-center text-body-secondary mt-3 mb-0">
+    Don't have an account? <a href="@AppRoutes.Register">Register here</a>
+</p>
 
 @code {
-    [CascadingParameter]
-    private HttpContext? HttpContext { get; set; }
-
     [SupplyParameterFromQuery]
     private string? ReturnUrl { get; set; }
 
-    private string? _errorMessage;
-    private bool _isSubmitting;
+    [SupplyParameterFromQuery]
+    private string? LoginError { get; set; }
 
-    protected override void OnInitialized()
+    [SupplyParameterFromQuery]
+    private string? RegisterSuccess { get; set; }
+
+    private LoginInput Model { get; set; } = new();
+
+    private string LoginErrorMessage => LoginError switch
     {
-        if (HttpContext is not null && !HttpMethods.IsPost(HttpContext.Request.Method))
-        {
-            if (HttpContext.User.Identity?.IsAuthenticated == true)
-            {
-                var destination = PostAuthRoute.GetPostAuthDestination(HttpContext.User, ReturnUrl);
-                Navigation.NavigateTo(destination);
-            }
-        }
-    }
+        "missing_credentials" => "Please enter your identifier and password.",
+        "invalid_credentials" => "Invalid email/username or password.",
+        _ => "An error occurred during sign in. Please try again."
+    };
 
-    private async Task HandleLogin(LoginInput input)
-    {
-        if (HttpContext is null)
-        {
-            return;
-        }
+    private string? SafeReturnUrl => ReturnUrlValidator.GetSafeReturnUrl(ReturnUrl);
 
-        _errorMessage = null;
-        _isSubmitting = true;
-
-        var result = await AuthService.SignInAsync(
-            input.Identifier,
-            input.Password,
-            input.RememberMe,
-            HttpContext);
-
-        _isSubmitting = false;
-
-        if (result.IsFailure || result.Value is null)
-        {
-            _errorMessage = "Invalid credentials.";
-            return;
-        }
-
-        var destination = PostAuthRoute.GetPostAuthDestination(result.Value, ReturnUrl);
-        Navigation.NavigateTo(destination);
-    }
+    private bool HasError(string field) => LoginError == "missing_credentials" && string.IsNullOrEmpty(Model.Identifier);
 }

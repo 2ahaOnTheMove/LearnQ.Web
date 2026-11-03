@@ -9,4 +9,5 @@ public sealed record CurrentUser(
     UserRole? Role,
     bool EmailVerified,
     bool OnboardingCompleted,
-    string? OnboardingStatus);
+    string? OnboardingStatus,
+    long? ResendAvailableAt = null);

@@ -33,10 +33,15 @@ public static class AuthorizationExtensions
                       .RequireClaim(AuthClaimTypes.EmailVerified, "true")
                       .RequireRole(UserRole.Teacher.ToString()));
 
-            options.FallbackPolicy = new AuthorizationPolicyBuilder()
-                .RequireAuthenticatedUser()
-                .RequireClaim(AuthClaimTypes.EmailVerified, "true")
-                .Build();
+            // Do NOT set a restrictive FallbackPolicy.
+            // A fallback policy requiring authenticated users would block all endpoints
+            // without explicit authorization metadata, including login and register POST endpoints.
+            // Instead, authorization is enforced explicitly:
+            // - MapRazorComponents<App>() uses the custom IAuthorizationMiddlewareResultHandler
+            //   to handle Blazor-side authorization via [Authorize] and AuthorizeRouteView.
+            // - Protected API endpoints use .RequireAuthorization().
+            // - Auth endpoints (login, register) use .AllowAnonymous().
+            // - The custom handler redirects unauthenticated users to login for HTML requests.
         });
 
         services.AddSingleton<IAuthorizationMiddlewareResultHandler, LearnQAuthorizationHandler>();

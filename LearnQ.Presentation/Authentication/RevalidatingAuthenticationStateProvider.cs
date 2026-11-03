@@ -17,7 +17,12 @@ public sealed class RevalidatingAuthStateProvider : RevalidatingServerAuthentica
         _scopeFactory = scopeFactory;
     }
 
-    protected override TimeSpan RevalidationInterval => TimeSpan.FromSeconds(30);
+    // Revalidate every 15 minutes. This is a balance between:
+    // - Detecting expired backend sessions in a reasonable time.
+    // - Not overwhelming the backend with validation requests.
+    // The BearerTokenHandler already handles per-request token validation,
+    // so this is a secondary safety net for the Blazor circuit.
+    protected override TimeSpan RevalidationInterval => TimeSpan.FromMinutes(15);
 
     protected override async Task<bool> ValidateAuthenticationStateAsync(
         AuthenticationState authenticationState, CancellationToken cancellationToken)

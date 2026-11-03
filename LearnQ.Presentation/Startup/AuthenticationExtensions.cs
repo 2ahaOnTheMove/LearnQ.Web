@@ -28,13 +28,15 @@ public static class AuthenticationExtensions
             {
                 options.Cookie.Name = cookieName;
                 options.Cookie.HttpOnly = true;
-                options.Cookie.SecurePolicy = CookieSecurePolicy.Always;
+                // Secure = true only in production (HTTPS). In development without HTTPS,
+                // the browser will reject a Secure cookie on HTTP.
+                options.Cookie.SecurePolicy = isDevelopment ? CookieSecurePolicy.None : CookieSecurePolicy.Always;
                 options.Cookie.SameSite = SameSiteMode.Lax;
                 options.ExpireTimeSpan = TimeSpan.FromHours(8);
                 options.SlidingExpiration = true;
                 options.LoginPath = AppRoutes.Login;
                 options.LogoutPath = AppRoutes.Logout;
-                options.AccessDeniedPath = AppRoutes.Login;
+                options.AccessDeniedPath = AppRoutes.AccessDenied;
             });
 
         services.AddOptions<CookieAuthenticationOptions>(CookieAuthenticationDefaults.AuthenticationScheme)

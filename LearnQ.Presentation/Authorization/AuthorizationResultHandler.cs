@@ -1,6 +1,7 @@
 using LearnQ.Application.Common.Constants;
 using LearnQ.Presentation.Notices;
 using LearnQ.Presentation.Routing;
+using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Authorization.Policy;
 
@@ -32,18 +33,54 @@ public sealed class LearnQAuthorizationHandler : IAuthorizationMiddlewareResultH
                 return;
             }
 
+            // Never redirect to login if we're already on the login or register page — that would loop.
+            // For verify-email, an unauthenticated user should be redirected to login (they need to log in first).
+            if (context.Request.Path.StartsWithSegments(AppRoutes.Login)
+                || context.Request.Path.StartsWithSegments(AppRoutes.Register))
+            {
+                // User is already on an auth page but not authenticated — this means
+                // the cookie expired or was invalid. Clear the stale cookie and let
+                // the page render as anonymous.
+                if (context.User.Identity?.IsAuthenticated == true)
+                {
+                    // Stale cookie — sign out to clear it
+                    await context.SignOutAsync();
+                }
+
+                // Re-execute the request so the page renders as anonymous
+                context.Response.StatusCode = StatusCodes.Status401Unauthorized;
+                return;
+            }
+
             var returnUrl = context.Request.Path + context.Request.QueryString;
             var safeReturnUrl = ReturnUrlValidator.GetSafeReturnUrl(returnUrl);
-            var redirectUrl = string.IsNullOrEmpty(safeReturnUrl) || safeReturnUrl == AppRoutes.Home
-                ? AppRoutes.Login
-                : $"{AppRoutes.Login}?returnUrl={Uri.EscapeDataString(safeReturnUrl)}";
 
-            context.Response.Redirect(redirectUrl);
+            // Don't add returnUrl if it's an auth page or home — avoid pointless redirects
+            if (!string.IsNullOrEmpty(safeReturnUrl)
+                && !safeReturnUrl.StartsWith("/auth/login")
+                && !safeReturnUrl.StartsWith("/auth/register")
+                && !safeReturnUrl.StartsWith("/auth/verify-email")
+                && safeReturnUrl != AppRoutes.Home)
+            {
+                context.Response.Redirect($"{AppRoutes.Login}?returnUrl={Uri.EscapeDataString(safeReturnUrl!)}");
+            }
+            else
+            {
+                context.Response.Redirect(AppRoutes.Login);
+            }
+
             return;
         }
 
         if (authorizeResult.Forbidden)
         {
+            // Never redirect to verify-email if we're already there
+            if (context.Request.Path.StartsWithSegments(AppRoutes.VerifyEmail))
+            {
+                context.Response.StatusCode = StatusCodes.Status403Forbidden;
+                return;
+            }
+
             var user = context.User;
             var isEmailVerified = user.FindFirst(AuthClaimTypes.EmailVerified)?.Value == "true";
             if (!isEmailVerified)

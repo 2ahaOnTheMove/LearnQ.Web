@@ -12,8 +12,8 @@
             <small class="text-body-secondary">&copy; @DateTime.UtcNow.Year LearnQ</small>
         </div>
         <div class="d-flex gap-3 align-items-center">
-            <a href="@AppRoutes.Terms" class="small text-body-secondary text-decoration-none">Terms</a>
-            <a href="@AppRoutes.Privacy" class="small text-body-secondary text-decoration-none">Privacy</a>
+            <a href="@AppRoutes.Terms" class="small text-body-secondary text-decoration-none">Terms and conditions</a>
+            <a href="@AppRoutes.Privacy" class="small text-body-secondary text-decoration-none">Privacy and policies</a>
             <AuthorizeView>
                 <Authorized>
                     <form method="post" action="@AppRoutes.Logout" class="d-inline">

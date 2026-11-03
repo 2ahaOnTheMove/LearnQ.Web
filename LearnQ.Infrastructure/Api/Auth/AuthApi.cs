@@ -6,6 +6,10 @@ using LearnQ.Infrastructure.Api.Common;
 
 namespace LearnQ.Infrastructure.Api.Auth;
 
+/// <summary>
+/// Anonymous auth API client for login, refresh, and logout.
+/// Must NOT use BearerTokenHandler to avoid recursion during token refresh.
+/// </summary>
 internal sealed class AuthApi(HttpClient httpClient) : IAuthApi
 {
     public async Task<Result<LoginResponse>> LoginAsync(LoginRequest request, CancellationToken cancellationToken = default)
@@ -91,7 +95,14 @@ internal sealed class AuthApi(HttpClient httpClient) : IAuthApi
             return Result.Failure(ApiErrorReader.FromException(ex));
         }
     }
+}
 
+/// <summary>
+/// Authenticated auth API client for operations requiring a bearer token.
+/// Used with BearerTokenHandler for automatic token attachment and refresh.
+/// </summary>
+internal sealed class AuthenticatedAuthApi(HttpClient httpClient) : IAuthenticatedAuthApi
+{
     public async Task<Result<CurrentUser>> GetMeAsync(CancellationToken cancellationToken = default)
     {
         try

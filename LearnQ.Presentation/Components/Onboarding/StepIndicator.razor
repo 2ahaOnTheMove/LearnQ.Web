@@ -2,58 +2,42 @@
 
 <div class="mb-3 mb-md-4">
     @* Compact text on mobile *@
-    <div class="d-flex align-items-center gap-2 small text-body-secondary d-sm-none">
-        <span class="fw-semibold text-body">Step @EffectiveStep of 3</span>
+    <div class="d-flex align-items-center gap-2 small text-body-secondary d-md-none">
+        <span class="fw-semibold text-body">Step @EffectiveStep of 4</span>
         <div class="progress flex-grow-1 step-progress">
             <div class="progress-bar bg-primary" role="progressbar" style="width: @(ProgressPercentage)%;" aria-valuenow="@ProgressPercentage" aria-valuemin="0" aria-valuemax="100"></div>
         </div>
     </div>
 
     @* Full stepper on md+ *@
-    <div class="d-none d-sm-flex justify-content-between align-items-center position-relative">
+    <div class="d-none d-md-flex justify-content-between align-items-center position-relative">
         <div class="progress position-absolute w-100 step-progress" style="top: 16px;">
             <div class="progress-bar bg-primary" role="progressbar" style="width: @(ProgressPercentage)%;" aria-valuenow="@ProgressPercentage" aria-valuemin="0" aria-valuemax="100"></div>
         </div>
 
-        <div class="d-flex flex-column align-items-center position-relative" style="z-index: 1;">
-            <div class="rounded-circle d-flex align-items-center justify-content-center fw-bold step-circle @GetStepCircleClass(1)">
-                @if (EffectiveStep > 1)
-                {
-                    <span>✓</span>
-                }
-                else
-                {
-                    <span>1</span>
-                }
+        @for (int i = 1; i <= 4; i++)
+        {
+            <div class="d-flex flex-column align-items-center position-relative" style="z-index: 1;">
+                <div class="rounded-circle d-flex align-items-center justify-content-center fw-bold step-circle @GetStepCircleClass(i)">
+                    @if (EffectiveStep > i)
+                    {
+                        <span>✓</span>
+                    }
+                    else
+                    {
+                        <span>@i</span>
+                    }
+                </div>
+                <span class="small mt-1 @GetStepLabelClass(i)">@StepNames[i - 1]</span>
             </div>
-            <span class="small mt-1 @GetStepLabelClass(1)">Role</span>
-        </div>
-
-        <div class="d-flex flex-column align-items-center position-relative" style="z-index: 1;">
-            <div class="rounded-circle d-flex align-items-center justify-content-center fw-bold step-circle @GetStepCircleClass(2)">
-                @if (EffectiveStep > 2)
-                {
-                    <span>✓</span>
-                }
-                else
-                {
-                    <span>2</span>
-                }
-            </div>
-            <span class="small mt-1 @GetStepLabelClass(2)">Profile</span>
-        </div>
-
-        <div class="d-flex flex-column align-items-center position-relative" style="z-index: 1;">
-            <div class="rounded-circle d-flex align-items-center justify-content-center fw-bold step-circle @GetStepCircleClass(3)">
-                3
-            </div>
-            <span class="small mt-1 @GetStepLabelClass(3)">Done</span>
-        </div>
+        }
     </div>
 </div>
 
 @code {
     [Parameter] public int? Step { get; set; }
+
+    private static readonly string[] StepNames = { "Verify", "Role", "Profile", "Complete" };
 
     private int EffectiveStep
     {
@@ -61,9 +45,10 @@
         {
             if (Step.HasValue) return Step.Value;
             var path = new Uri(Navigation.Uri).AbsolutePath.ToLowerInvariant();
-            if (path.Contains("/onboarding/role")) return 1;
-            if (path.Contains("/onboarding/student") || path.Contains("/onboarding/teacher")) return 2;
-            if (path.Contains("/onboarding/status") || path.Contains("/dashboard")) return 3;
+            if (path.Contains("/onboarding/verify-email")) return 1;
+            if (path.Contains("/onboarding/role")) return 2;
+            if (path.Contains("/onboarding/student") || path.Contains("/onboarding/teacher")) return 3;
+            if (path.Contains("/onboarding/status") || path.Contains("/dashboard")) return 4;
             return 1;
         }
     }
@@ -71,7 +56,8 @@
     private int ProgressPercentage => EffectiveStep switch
     {
         1 => 0,
-        2 => 50,
+        2 => 33,
+        3 => 66,
         _ => 100
     };
 

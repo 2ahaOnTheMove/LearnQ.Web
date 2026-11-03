@@ -2,7 +2,7 @@
 
 <PageHeader Title="Choose Your Role" Subtitle="Select how you would like to use LearnQ." />
 
-<EditForm Model="Model" FormName="role-selection" OnValidSubmit="HandleValidSubmit" Enhance novalidate>
+<EditForm Model="Model" FormName="role-selection" OnValidSubmit="HandleValidSubmit" novalidate>
     <DataAnnotationsValidator />
 
     @if (!string.IsNullOrWhiteSpace(DisplayErrorMessage))
@@ -15,6 +15,12 @@
             <div class="col-12 col-md-6">
                 <InputRadio Value="@UserRole.Student" class="btn-check" id="role-student" />
                 <label class="btn btn-outline-primary w-100 p-3 text-center" for="role-student">
+                    <div class="mb-2">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M22 10v6M2 10l10-5 10 5-10 5z" />
+                            <path d="M6 12v5c2.667-1.333 5.333-1.333 8 0 2.667-1.333 5.333-1.333 8 0v-5" />
+                        </svg>
+                    </div>
                     <h6 class="fw-semibold mb-1">Student</h6>
                     <p class="small mb-0">Learn for yourself or find qualified teachers for your family.</p>
                 </label>
@@ -23,6 +29,11 @@
             <div class="col-12 col-md-6">
                 <InputRadio Value="@UserRole.Teacher" class="btn-check" id="role-teacher" />
                 <label class="btn btn-outline-primary w-100 p-3 text-center" for="role-teacher">
+                    <div class="mb-2">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M4 19.5v-15A2.5 2.5 0 0 1 6.5 2H20v20H6.5a2.5 2.5 0 0 1 0-5H20" />
+                        </svg>
+                    </div>
                     <h6 class="fw-semibold mb-1">Teacher</h6>
                     <p class="small mb-0">Apply as an instructor, manage availability, and teach learners.</p>
                 </label>
@@ -36,17 +47,21 @@
 
     <div class="d-grid">
         <button type="submit" class="btn btn-primary w-100" disabled="@IsSubmitting">
-            Continue
+            @if (IsSubmitting)
+            {
+                <span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
+                <span>Saving...</span>
+            }
+            else
+            {
+                <span>Continue to Profile</span>
+            }
         </button>
     </div>
 </EditForm>
 
-<p class="text-center text-body-secondary small mt-3 mb-0">
-    <a href="@AppRoutes.Home">Back to home</a>
-</p>
-
 @code {
-    [SupplyParameterFromForm]
+    [SupplyParameterFromForm(FormName = "role-selection")]
     public RoleSelectionInput Model { get; set; } = default!;
 
     [Parameter, EditorRequired]

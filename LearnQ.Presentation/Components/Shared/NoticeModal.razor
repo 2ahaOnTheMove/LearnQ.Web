@@ -1,3 +1,5 @@
+@using System.Timers
+
 @code {
     [Parameter, EditorRequired] public string Title { get; set; } = default!;
     [Parameter, EditorRequired] public string Message { get; set; } = default!;
@@ -5,30 +7,149 @@
     [Parameter] public string CloseText { get; set; } = "Close";
     [Parameter] public string Severity { get; set; } = "danger";
     [Parameter] public int? RetryAfterSeconds { get; set; }
+    [Parameter] public string? Scope { get; set; }
     [Parameter] public RenderFragment? AdditionalButtons { get; set; }
+
+    private string ModalId => "noticeModal";
+    private int _remainingSeconds;
+    private System.Timers.Timer? _countdownTimer;
+    private bool _isRateLimit => Severity == "warning";
+
+    protected override void OnParametersSet()
+    {
+        _remainingSeconds = RetryAfterSeconds ?? 0;
+    }
+
+    protected override void OnAfterRender(bool firstRender)
+    {
+        if (firstRender && _remainingSeconds > 0 && _isRateLimit)
+        {
+            // Start server-side countdown timer
+            _countdownTimer = new System.Timers.Timer(1000) { AutoReset = true };
+            _countdownTimer.Elapsed += (s, e) =>
+            {
+                InvokeAsync(() =>
+                {
+                    _remainingSeconds--;
+                    if (_remainingSeconds <= 0)
+                    {
+                        _countdownTimer?.Stop();
+                        StateHasChanged();
+                    }
+                    else
+                    {
+                        StateHasChanged();
+                    }
+                });
+            };
+            _countdownTimer.Start();
+        }
+    }
+
+    public void Dispose()
+    {
+        _countdownTimer?.Stop();
+        _countdownTimer?.Dispose();
+    }
+
+    private string FormatCountdown(int seconds)
+    {
+        var mins = seconds / 60;
+        var secs = seconds % 60;
+        return $"{mins}:{secs:D2}";
+    }
+
+    private string? GetScopeMessage()
+    {
+        return Scope?.ToLowerInvariant() switch
+        {
+            _ when Scope?.Contains("login") == true => "Too many sign-in attempts.",
+            _ when Scope?.Contains("verify") == true => "Too many incorrect codes.",
+            _ when Scope?.Contains("resend") == true => "Too many code requests.",
+            _ when Scope?.Contains("register") == true => "Too many registration attempts.",
+            _ when Scope?.Contains("refresh") == true => "Too many session refreshes.",
+            _ => null
+        };
+    }
 }
 
-<div class="modal d-block show modal-backdrop-static" tabindex="-1" role="dialog" aria-modal="true" aria-labelledby="noticeModalTitle">
-    <div class="modal-dialog modal-dialog-centered modal-sm">
-        <div class="modal-content border">
-            <div class="modal-header bg-@Severity text-white">
-                <h6 class="modal-title fw-semibold mb-0" id="noticeModalTitle">@Title</h6>
-                <a href="@CloseHref" class="btn-close btn-close-white" aria-label="Close" autofocus></a>
-            </div>
-            <div class="modal-body pb-3">
-                <p class="mb-0">@Message</p>
-                @if (RetryAfterSeconds.HasValue)
-                {
-                    <p class="mb-0 mt-2 small text-body-secondary">Please wait @RetryAfterSeconds.Value seconds.</p>
-                }
-            </div>
-            <div class="modal-footer border-0 pt-0">
-                @if (AdditionalButtons is not null)
-                {
-                    <div class="me-auto">@AdditionalButtons</div>
-                }
-                <a href="@CloseHref" class="btn btn-primary">@CloseText</a>
+@if (_isRateLimit && RetryAfterSeconds.HasValue && RetryAfterSeconds.Value > 0)
+{
+    <div class="modal fade" tabindex="-1" role="alertdialog" aria-modal="true"
+         aria-labelledby="@($"{ModalId}-title")" aria-describedby="@($"{ModalId}-desc")"
+         id="@ModalId" data-bs-backdrop="static" data-bs-keyboard="false">
+        <div class="modal-dialog modal-dialog-centered modal-sm">
+            <div class="modal-content border">
+                <div class="modal-header bg-warning text-dark">
+                    <div class="d-flex align-items-center gap-2">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24"
+                             fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z" />
+                            <line x1="12" y1="9" x2="12" y2="13" />
+                            <line x1="12" y1="17" x2="12.01" y2="17" />
+                        </svg>
+                        <h6 class="modal-title fw-semibold mb-0" id="@($"{ModalId}-title")">@Title</h6>
+                    </div>
+                </div>
+                <div class="modal-body pb-3">
+                    <p class="mb-2" id="@($"{ModalId}-desc")">
+                        @if (GetScopeMessage() is string scopeMsg)
+                        {
+                            @scopeMsg
+                        }
+                        else
+                        {
+                            @Message
+                        }
+                    </p>
+                    <p class="mb-2 small text-body-secondary">
+                        You've made a lot of requests in a short time. For your security, please wait before trying again.
+                    </p>
+                    <div class="text-center mb-2">
+                        <span class="fs-4 fw-semibold" aria-live="polite" aria-atomic="true"
+                              id="@($"{ModalId}-countdown")">
+                            Try again in @FormatCountdown(_remainingSeconds)
+                        </span>
+                    </div>
+                    <div class="progress" style="height:4px">
+                        <div class="progress-bar bg-warning" role="progressbar"
+                             style="width:@(Math.Max(0, (double)_remainingSeconds / (RetryAfterSeconds.Value > 0 ? RetryAfterSeconds.Value : 1) * 100))%"
+                             aria-valuenow="@_remainingSeconds" aria-valuemin="0" aria-valuemax="@RetryAfterSeconds.Value">
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer border-0 pt-0">
+                    @if (AdditionalButtons is not null)
+                    {
+                        <div class="me-auto">@AdditionalButtons</div>
+                    }
+                    <a href="@CloseHref" class="btn btn-outline-secondary">@CloseText</a>
+                </div>
             </div>
         </div>
     </div>
-</div>
+}
+else
+{
+    <div class="modal fade" tabindex="-1" role="dialog" aria-modal="true"
+         aria-labelledby="@($"{ModalId}-title")" id="@ModalId">
+        <div class="modal-dialog modal-dialog-centered modal-sm">
+            <div class="modal-content border">
+                <div class="modal-header bg-@Severity text-white">
+                    <h6 class="modal-title fw-semibold mb-0" id="@($"{ModalId}-title")">@Title</h6>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body pb-3">
+                    <p class="mb-0">@Message</p>
+                </div>
+                <div class="modal-footer border-0 pt-0">
+                    @if (AdditionalButtons is not null)
+                    {
+                        <div class="me-auto">@AdditionalButtons</div>
+                    }
+                    <a href="@CloseHref" class="btn btn-primary" data-bs-dismiss="modal">@CloseText</a>
+                </div>
+            </div>
+        </div>
+    </div>
+}

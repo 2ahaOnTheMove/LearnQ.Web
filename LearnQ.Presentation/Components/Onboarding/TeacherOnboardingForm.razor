@@ -2,9 +2,9 @@
 @using LearnQ.Application.Common.Models
 @inject ILanguageCatalog LanguageCatalog
 
-<PageHeader Title="Teacher Profile Setup" Subtitle="Tell us about your teaching experience and preferences." />
+<PageHeader Title="Your Profile" Subtitle="Tell us about your teaching experience and preferences." />
 
-<EditForm EditContext="_editContext" FormName="teacher-onboarding" OnValidSubmit="HandleValidSubmit" Enhance novalidate>
+<EditForm EditContext="_editContext" FormName="teacher-onboarding" OnValidSubmit="HandleValidSubmit" novalidate>
     <DataAnnotationsValidator />
     <BootstrapValidation />
 
@@ -109,7 +109,7 @@
     private IReadOnlyList<LanguageOption> _languages = [];
     private bool _isUploading;
 
-    [SupplyParameterFromForm]
+    [SupplyParameterFromForm(FormName = "teacher-onboarding")]
     public TeacherOnboardingInput Model { get; set; } = default!;
 
     [Parameter, EditorRequired]

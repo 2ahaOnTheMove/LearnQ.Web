@@ -1,70 +1,90 @@
-@using LearnQ.Presentation.Authentication
-@using LearnQ.Presentation.Notices
 @layout AuthWideLayout
 @attribute [Route(AppRoutes.Register)]
 @attribute [AllowAnonymous]
-@inject IClientApi Api
-@inject IAuthService AuthService
-@inject NavigationManager Navigation
 
 <XPageTitle Name="Sign Up" />
-<RegisterForm OnSubmit="HandleRegister" Error="@_apiError" />
+
+@* 
+    CRITICAL: Registration must use a native browser form POST, not a Blazor component event handler.
+    
+    The registration form posts directly to the ASP.NET Core /auth/register endpoint,
+    which calls the backend registration API, stores tokens in Redis, creates the
+    authentication cookie, and redirects to the verify-email page.
+*@
+
+<PageHeader Title="Create Account" Subtitle="Join LearnQ to start the journey" />
+
+@if (!string.IsNullOrEmpty(RegisterError))
+{
+    <div class="alert alert-danger py-2 small" role="alert">@RegisterMessage</div>
+}
+
+<form method="post" action="@AppRoutes.Register">
+    <AntiforgeryToken />
+    <div class="row g-3">
+        <div class="col-md-6 mb-3">
+            <label for="GivenName" class="form-label">First name</label>
+            <input id="GivenName" name="givenName" type="text" class="form-control" autocomplete="given-name" required />
+        </div>
+        <div class="col-md-6 mb-3">
+            <label for="FamilyName" class="form-label">Last name</label>
+            <input id="FamilyName" name="familyName" type="text" class="form-control" autocomplete="family-name" required />
+        </div>
+    </div>
+
+    <div class="mb-3">
+        <label for="DisplayName" class="form-label">Display name</label>
+        <input id="DisplayName" name="displayName" type="text" class="form-control" autocomplete="username" required />
+    </div>
+
+    <div class="mb-3">
+        <label for="Email" class="form-label">Email</label>
+        <input id="Email" name="email" type="email" class="form-control" autocomplete="email" required />
+    </div>
+
+    <div class="row g-3">
+        <div class="col-md-6 mb-3">
+            <label for="Password" class="form-label">Password</label>
+            <input id="Password" name="password" type="password" class="form-control" autocomplete="new-password" required />
+        </div>
+        <div class="col-md-6 mb-3">
+            <label for="ConfirmPassword" class="form-label">Confirm password</label>
+            <input id="ConfirmPassword" name="confirmPassword" type="password" class="form-control" autocomplete="new-password" required />
+        </div>
+    </div>
+
+    <div class="mb-3">
+        <label for="ReferralCode" class="form-label">Referral code (optional)</label>
+        <input id="ReferralCode" name="referralCode" type="text" class="form-control" autocomplete="off" />
+    </div>
+
+    <div class="mb-3">
+        <div class="form-check">
+            <input id="TermsAccepted" name="termsAccepted" type="checkbox" class="form-check-input" value="true" required />
+            <label for="TermsAccepted" class="form-check-label">I have read and agree to the <a href="@AppRoutes.Terms" target="_blank">Terms and Conditions</a></label>
+        </div>
+    </div>
+
+    <div class="mb-3">
+        <div class="form-check">
+            <input id="PrivacyAccepted" name="privacyAccepted" type="checkbox" class="form-check-input" value="true" required />
+            <label for="PrivacyAccepted" class="form-check-label">I have read and agree to the <a href="@AppRoutes.Privacy" target="_blank">Privacy Policy</a></label>
+        </div>
+    </div>
+
+    <div class="d-grid mt-3">
+        <button type="submit" class="btn btn-primary w-100">Create Account</button>
+    </div>
+</form>
+
+<p class="text-center text-body-secondary small mt-3 mb-0">
+    Already have an account? <a href="@AppRoutes.Login">Sign in</a>
+</p>
 
 @code {
-    [CascadingParameter]
-    private HttpContext? HttpContext { get; set; }
+    [SupplyParameterFromQuery]
+    private string? RegisterError { get; set; }
 
-    private ApiError? _apiError;
-
-    protected override void OnInitialized()
-    {
-        if (HttpContext is not null && !HttpMethods.IsPost(HttpContext.Request.Method))
-        {
-            if (HttpContext.User.Identity?.IsAuthenticated == true)
-            {
-                var destination = PostAuthRoute.GetPostAuthDestination(HttpContext.User);
-                Navigation.NavigateTo(destination);
-            }
-        }
-    }
-
-    private async Task HandleRegister(RegisterInput input)
-    {
-        _apiError = null;
-
-        var request = new RegisterClientRequest(
-            input.GivenName,
-            input.FamilyName,
-            input.DisplayName,
-            input.Email,
-            input.Password,
-            input.TermsAccepted,
-            input.PrivacyAccepted);
-
-        var result = await Api.RegisterAsync(request);
-
-        if (result.IsFailure)
-        {
-            _apiError = result.Error;
-            return;
-        }
-
-        if (HttpContext is not null)
-        {
-            var signInResult = await AuthService.SignInAsync(
-                input.Email,
-                input.Password,
-                false,
-                HttpContext);
-
-            if (signInResult.IsSuccess && signInResult.Value is not null)
-            {
-                var destination = PostAuthRoute.GetPostAuthDestination(signInResult.Value);
-                Navigation.NavigateTo(destination);
-                return;
-            }
-        }
-
-        Navigation.NavigateTo($"{AppRoutes.Login}?notice={NoticeCatalog.NoticeKeys.Registered}");
-    }
+    [SupplyParameterFromQuery]
+    private string? RegisterMessage { get; set; }
 }

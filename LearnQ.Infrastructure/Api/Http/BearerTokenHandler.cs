@@ -29,10 +29,17 @@ public sealed class BearerTokenHandler : DelegatingHandler
 
     protected override async Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
     {
-        var sid = await _sessionAccessor.GetSessionIdAsync(cancellationToken);
+        // AsyncLocal session ID set by AuthService bridges the DI scope gap where
+        // IHttpClientFactory creates its own scope for DelegatingHandlers.
+        var sid = SessionContext.SessionId
+            ?? await _sessionAccessor.GetSessionIdAsync(cancellationToken);
+
         if (string.IsNullOrEmpty(sid))
         {
-            return await base.SendAsync(request, cancellationToken);
+            // No active session — return 401 locally instead of hitting the backend
+            // without a token. This avoids unnecessary network calls and confusing
+            // 401 logs from the backend when the caller is anonymous.
+            return CreateSessionExpiredResponse(request);
         }
 
         var tokens = await _sessionStore.GetTokensAsync(sid, cancellationToken);
@@ -68,6 +75,13 @@ public sealed class BearerTokenHandler : DelegatingHandler
         }
 
         var response = await base.SendAsync(request, cancellationToken);
+
+        // 429 Too Many Requests is NOT an auth failure — pass through unchanged.
+        // The RateLimitHandler (outer handler) will convert it to RateLimitedException.
+        if (response.StatusCode == HttpStatusCode.TooManyRequests)
+        {
+            return response;
+        }
 
         // Reactive token refresh on 401 Unauthorized
         if (response.StatusCode == HttpStatusCode.Unauthorized)

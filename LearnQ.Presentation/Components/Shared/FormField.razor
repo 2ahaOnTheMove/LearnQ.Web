@@ -2,8 +2,17 @@
 
 <div class="@Class">
     <label for="@For.GetFieldName()" class="form-label">@Label</label>
-    @ChildContent
-    <ValidationMessage For="For" class="invalid-feedback d-block" />
+    @if (CascadedEditContext is not null)
+    {
+        <CascadingValue Value="CascadedEditContext" IsFixed="true">
+            @ChildContent
+            <ValidationMessage For="For" class="invalid-feedback d-block" />
+        </CascadingValue>
+    }
+    else
+    {
+        @ChildContent
+    }
 </div>
 
 @code {
@@ -11,4 +20,6 @@
     [Parameter, EditorRequired] public System.Linq.Expressions.Expression<Func<TValue>> For { get; set; } = default!;
     [Parameter] public string Class { get; set; } = "mb-3";
     [Parameter] public RenderFragment? ChildContent { get; set; }
+    [CascadingParameter] 
+    private EditContext? CascadedEditContext { get; set; }
 }

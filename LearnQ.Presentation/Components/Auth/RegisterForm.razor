@@ -1,6 +1,6 @@
 <PageHeader Title="Create Account" Subtitle="Join LearnQ to start the journey" />
 
-<EditForm EditContext="_editContext" FormName="register" OnValidSubmit="HandleValidSubmit" Enhance novalidate>
+<EditForm EditContext="_editContext" FormName="register" OnValidSubmit="HandleValidSubmit" novalidate>
     <DataAnnotationsValidator />
     <BootstrapValidation />
 
@@ -69,7 +69,7 @@
     private ValidationMessageStore _messageStore = default!;
     private RegisterInput? _previousModel;
 
-    [SupplyParameterFromForm]
+    [SupplyParameterFromForm(FormName = "register")]
     public RegisterInput Model { get; set; } = default!;
 
     [Parameter, EditorRequired]

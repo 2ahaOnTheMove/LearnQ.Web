@@ -5,5 +5,5 @@ namespace LearnQ.Application.Common.Interfaces;
 
 public interface IClientApi
 {
-    Task<Result> RegisterAsync(RegisterClientRequest request, CancellationToken ct = default);
+    Task<Result<RegisterResponse>> RegisterAsync(RegisterClientRequest request, CancellationToken ct = default);
 }

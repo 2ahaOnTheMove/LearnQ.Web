@@ -22,6 +22,10 @@ public static class ApiClientsExtensions
 
         services.AddSingleton<ILanguageCatalog, LanguageCatalog>();
 
+        // DelegatingHandlers must be Transient (not Singletons)
+        services.AddTransient<BearerTokenHandler>();
+        services.AddTransient<RateLimitHandler>();
+
         // Anonymous client for Register (no bearer token handler)
         services.AddHttpClient<IClientApi, ClientApi>(client =>
         {
@@ -36,20 +40,32 @@ public static class ApiClientsExtensions
             client.Timeout = TimeSpan.FromSeconds(15);
         });
 
-        // Authenticated client for Onboarding (uses BearerTokenHandler)
+        // Authenticated client for Auth (verify-email, resend-verification, me)
+        // RateLimitHandler is outer (first), BearerTokenHandler is inner (second)
+        var authBuilder = services.AddHttpClient<IAuthenticatedAuthApi, AuthenticatedAuthApi>(client =>
+        {
+            client.BaseAddress = new Uri(apiOptions.BaseUrl);
+            client.Timeout = TimeSpan.FromSeconds(15);
+        });
+        authBuilder.AddHttpMessageHandler<RateLimitHandler>();
+        authBuilder.AddHttpMessageHandler<BearerTokenHandler>();
+
+        // Authenticated client for Onboarding
         var onboardingBuilder = services.AddHttpClient<IOnboardingApi, OnboardingApi>(client =>
         {
             client.BaseAddress = new Uri(apiOptions.BaseUrl);
             client.Timeout = TimeSpan.FromSeconds(15);
         });
+        onboardingBuilder.AddHttpMessageHandler<RateLimitHandler>();
         onboardingBuilder.AddHttpMessageHandler<BearerTokenHandler>();
 
-        // Authenticated client for Avatars (uses BearerTokenHandler)
+        // Authenticated client for Avatars
         var avatarBuilder = services.AddHttpClient<IAvatarApi, AvatarApi>(client =>
         {
             client.BaseAddress = new Uri(apiOptions.BaseUrl);
             client.Timeout = TimeSpan.FromSeconds(30);
         });
+        avatarBuilder.AddHttpMessageHandler<RateLimitHandler>();
         avatarBuilder.AddHttpMessageHandler<BearerTokenHandler>();
 
         return services;

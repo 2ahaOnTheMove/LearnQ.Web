@@ -1,0 +1,387 @@
+@using LearnQ.Presentation.Routing
+@using Microsoft.JSInterop
+@inject IJSRuntime JS
+
+<div class="text-center mb-3 mb-md-4">
+    <div class="verify-icon mx-auto" aria-hidden="true">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+             stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+            <rect x="2" y="4" width="20" height="16" rx="2" />
+            <polyline points="22,4 12,13 2,4" />
+        </svg>
+    </div>
+    <h1 class="fs-4 fs-md-3 fw-semibold mb-1">@Title</h1>
+    @if (!string.IsNullOrWhiteSpace(Subtitle))
+    {
+        <p class="text-body-secondary mb-0">@Subtitle</p>
+    }
+</div>
+
+@* Status / error messages *@
+@if (!string.IsNullOrEmpty(SuccessMessage))
+{
+    <div class="alert alert-success py-2 small fade-in" role="status">
+        <div class="d-flex align-items-center gap-2 justify-content-center">
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none"
+                 stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M20 6L9 17l-5-5" />
+            </svg>
+            @SuccessMessage
+        </div>
+    </div>
+}
+
+@if (!string.IsNullOrEmpty(ErrorMessage))
+{
+    <div class="alert alert-danger py-2 small fade-in" role="alert">
+        @ErrorMessage
+    </div>
+}
+
+@* Verification code form *@
+<EditForm Model="Model"
+          FormName="verify-email-form"
+          OnValidSubmit="HandleValidSubmit"
+          novalidate>
+    <DataAnnotationsValidator />
+
+    @* Six single-digit code boxes *@
+    <fieldset class="border-0 mb-3 px-0">
+        <legend class="visually-hidden">Enter 6-digit verification code</legend>
+        <div class="code-input-group" id="codeInputGroup">
+            @foreach (int i in Enumerable.Range(0, 6))
+            {
+                <input type="text"
+                       id="codeDigit@(i + 1)"
+                       class="code-digit @(GetDigitClass(i))"
+                       inputmode="numeric"
+                       autocomplete="one-time-code"
+                       pattern="[0-9]*"
+                       maxlength="1"
+                       aria-label="Digit @(i + 1) of 6"
+                       value="@(_digits[i])"
+                       disabled="@(IsSubmitting || IsLocked)"
+                       @ref="@(_digitInputs[i])"
+                       @oninput="@((ChangeEventArgs e) => HandleDigitInput(i, e))"
+                       @onkeydown="@((KeyboardEventArgs e) => HandleDigitKeydown(i, e))"
+                       @onfocus="() => HandleDigitFocus(i)"
+                       data-index="@i" />
+            }
+        </div>
+        @* Hidden input that the Blazor form binds to *@
+        <input type="hidden" name="Code" value="@Model.Code" />
+        <ValidationMessage For="() => Model.Code" class="invalid-feedback d-block text-center small mt-1" />
+    </fieldset>
+
+    @* Primary submit button *@
+    <div class="d-grid">
+        <button type="submit" class="btn btn-primary w-100" disabled="@(IsSubmitting || IsLocked)">
+            @if (IsSubmitting)
+            {
+                <span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
+                <span>Verifying...</span>
+            }
+            else
+            {
+                <span>Verify Email</span>
+            }
+        </button>
+    </div>
+</EditForm>
+
+@* Helper text *@
+<div class="text-center mt-3 small text-body-secondary">
+    <p class="mb-1">The code expires in 15 minutes.</p>
+    <p class="mb-0">Check your spam folder if you can't find it.</p>
+</div>
+
+@* Resend section *@
+<div class="text-center mt-3 pt-3 border-top">
+    @if (_resendCooldownRemaining > 0)
+    {
+        <p class="text-body-secondary small mb-0">
+            Didn't get a code? Resend in <strong class="text-body">@FormatCountdown(_resendCooldownRemaining)</strong>
+        </p>
+    }
+    else if (IsDailyLimitReached)
+    {
+        <p class="text-body-secondary small mb-0">
+            You've reached the daily resend limit. Please try again tomorrow.
+        </p>
+    }
+    else
+    {
+        <button type="button" class="btn btn-link text-decoration-none p-0 small"
+                @onclick="HandleResendClick"
+                disabled="@IsResending"
+                aria-label="Resend verification code">
+            @if (IsResending)
+            {
+                <span class="spinner-border spinner-border-sm me-1" role="status" aria-hidden="true"></span>
+                <span>Sending...</span>
+            }
+            else
+            {
+                <span>Didn't get a code? <strong>Resend</strong></span>
+            }
+        </button>
+    }
+</div>
+
+@* Logout link *@
+<div class="text-center mt-2">
+    <form method="post" action="@AppRoutes.Logout" class="d-inline" formname="logout-form">
+        <AntiforgeryToken />
+        <button type="submit" class="btn btn-link text-decoration-none text-body-secondary small p-0">
+            Sign out
+        </button>
+    </form>
+</div>
+
+@* OTP input helpers: paste handler + Blazor interop functions *@
+<script>
+// Blazor interop: focus an input element
+window.focusElement = function(el) {
+    if (el) el.focus();
+};
+
+// Blazor interop: select all text in an input element
+window.selectElement = function(el) {
+    if (el) el.select();
+};
+
+(function() {
+    var group = document.getElementById('codeInputGroup');
+    if (!group) return;
+    var inputs = group.querySelectorAll('.code-digit');
+    if (inputs.length !== 6) return;
+
+    inputs.forEach(function(input) {
+        input.addEventListener('paste', function(e) {
+            e.preventDefault();
+            var text = (e.clipboardData || window.clipboardData).getData('text');
+            text = text.replace(/[^0-9]/g, '').substring(0, 6);
+            for (var j = 0; j < text.length; j++) {
+                if (inputs[j]) {
+                    inputs[j].value = text[j];
+                    inputs[j].dispatchEvent(new Event('input', { bubbles: true }));
+                }
+            }
+            if (text.length && inputs[Math.min(text.length, 5)]) {
+                inputs[Math.min(text.length, 5)].focus();
+            }
+        });
+    });
+
+    // Auto-focus first digit on initial load (before Blazor circuit connects)
+    inputs[0]?.focus();
+})();
+</script>
+
+@code {
+    [Parameter, EditorRequired] public EventCallback<VerifyEmailInput> OnSubmit { get; set; }
+    [Parameter, EditorRequired] public EventCallback OnResend { get; set; }
+    [Parameter] public string? ErrorMessage { get; set; }
+    [Parameter] public string? SuccessMessage { get; set; }
+    [Parameter] public string? Title { get; set; } = "Verify your email";
+    [Parameter] public string? Subtitle { get; set; }
+    [Parameter] public bool IsSubmitting { get; set; }
+    [Parameter] public bool IsLocked { get; set; }
+    [Parameter] public bool IsDailyLimitReached { get; set; }
+    /// <summary>Server-provided timestamp (ms epoch) when resend becomes available again.</summary>
+    [Parameter] public long? ResendAvailableAt { get; set; }
+
+    [SupplyParameterFromForm(FormName = "verify-email-form")]
+    public VerifyEmailInput Model { get; set; } = default!;
+
+    private ElementReference[] _digitInputs = new ElementReference[6];
+    private string[] _digits = new string[6];
+    private bool IsResending;
+    private int _resendCooldownRemaining;
+    private PeriodicTimer? _cooldownTimer;
+
+    protected override void OnInitialized()
+    {
+        Model ??= new();
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            try
+            {
+                await JS.InvokeVoidAsync("focusElement", _digitInputs[0]);
+            }
+            catch { /* JS not available during static render */ }
+        }
+    }
+
+    protected override void OnParametersSet()
+    {
+        Model ??= new();
+
+        // Derive countdown from server timestamp
+        if (ResendAvailableAt.HasValue)
+        {
+            long now = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
+            long remaining = (ResendAvailableAt.Value - now) / 1000;
+            _resendCooldownRemaining = Math.Max(0, (int)remaining);
+        }
+
+        // Start timer if there is remaining cooldown
+        if (_resendCooldownRemaining > 0 && _cooldownTimer is null)
+        {
+            StartCooldownTimer();
+        }
+        else if (_resendCooldownRemaining <= 0 && _cooldownTimer is not null)
+        {
+            _cooldownTimer.Dispose();
+            _cooldownTimer = null;
+        }
+    }
+
+    private void StartCooldownTimer()
+    {
+        _cooldownTimer?.Dispose();
+        _cooldownTimer = new PeriodicTimer(TimeSpan.FromSeconds(1));
+        _ = TickAsync();
+    }
+
+    private async Task TickAsync()
+    {
+        try
+        {
+            while (_cooldownTimer is not null && await _cooldownTimer.WaitForNextTickAsync())
+            {
+                _resendCooldownRemaining--;
+                if (_resendCooldownRemaining <= 0)
+                {
+                    _resendCooldownRemaining = 0;
+                    _cooldownTimer.Dispose();
+                    _cooldownTimer = null;
+                }
+                await InvokeAsync(StateHasChanged);
+            }
+        }
+        catch (ObjectDisposedException) { }
+    }
+
+    /// <summary>Handle digit input — auto-advance to next box.</summary>
+    private async Task HandleDigitInput(int index, ChangeEventArgs e)
+    {
+        var val = (e.Value?.ToString() ?? "")
+            .Replace("-", "") // iOS sometimes sends hyphens
+            .Replace(" ", "")
+            .Replace("\u00A0", ""); // non-breaking space
+        val = new string(val.Where(char.IsDigit).ToArray());
+
+        if (val.Length > 1)
+        {
+            val = val[0].ToString();
+        }
+
+        _digits[index] = val;
+        UpdateCode();
+
+        // Auto-advance to next digit
+        if (!string.IsNullOrEmpty(val) && index < 5)
+        {
+            try
+            {
+                await JS.InvokeVoidAsync("focusElement", _digitInputs[index + 1]);
+            }
+            catch { /* JS not available */ }
+        }
+    }
+
+    /// <summary>Handle backspace to move to previous box and arrow keys.</summary>
+    private async Task HandleDigitKeydown(int index, KeyboardEventArgs e)
+    {
+        if (e.Key == "Backspace" && string.IsNullOrEmpty(_digits[index]) && index > 0)
+        {
+            // Move focus to previous digit
+            try
+            {
+                await JS.InvokeVoidAsync("focusElement", _digitInputs[index - 1]);
+            }
+            catch { /* JS not available */ }
+        }
+        else if (e.Key == "ArrowLeft" && index > 0)
+        {
+            try
+            {
+                await JS.InvokeVoidAsync("focusElement", _digitInputs[index - 1]);
+            }
+            catch { /* JS not available */ }
+        }
+        else if (e.Key == "ArrowRight" && index < 5)
+        {
+            try
+            {
+                await JS.InvokeVoidAsync("focusElement", _digitInputs[index + 1]);
+            }
+            catch { /* JS not available */ }
+        }
+    }
+
+    private void HandleDigitFocus(int index)
+    {
+        // Select content on focus for easier replacement
+        try
+        {
+            _ = JS.InvokeVoidAsync("selectElement", _digitInputs[index]);
+        }
+        catch { /* JS not available */ }
+    }
+
+    private void UpdateCode()
+    {
+        var code = string.Concat(_digits);
+        Model.Code = code;
+    }
+
+    private string GetDigitClass(int index)
+    {
+        var classes = new List<string> { "code-digit" };
+        if (IsLocked) return string.Join(" ", classes);
+        if (!string.IsNullOrEmpty(ErrorMessage)) classes.Add("code-error");
+        else if (!string.IsNullOrEmpty(SuccessMessage)) classes.Add("code-success");
+        return string.Join(" ", classes);
+    }
+
+    private async Task HandleValidSubmit()
+    {
+        // Ensure code is up to date from digits
+        UpdateCode();
+        await OnSubmit.InvokeAsync(Model);
+    }
+
+    private async Task HandleResendClick()
+    {
+        if (_resendCooldownRemaining > 0 || IsResending) return;
+        IsResending = true;
+        await OnResend.InvokeAsync();
+        IsResending = false;
+    }
+
+    private string FormatCountdown(int seconds)
+    {
+        int min = seconds / 60;
+        int sec = seconds % 60;
+        return $"{min}:{sec:D2}";
+    }
+
+    public void ClearDigits()
+    {
+        _digits = new string[6];
+        Model.Code = string.Empty;
+        StateHasChanged();
+    }
+
+    public void Dispose()
+    {
+        _cooldownTimer?.Dispose();
+        _cooldownTimer = null;
+    }
+}

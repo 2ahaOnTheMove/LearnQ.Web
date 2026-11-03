@@ -1,36 +1,30 @@
+@using static Microsoft.AspNetCore.Components.Web.RenderMode
 @attribute [Route(AppRoutes.OnboardingTeacher)]
 @attribute [Authorize(Policy = AuthPolicies.TeacherOnly)]
+@rendermode InteractiveServer
 @inject IOnboardingApi OnboardingApi
 @inject IAuthService AuthService
 @inject NavigationManager Navigation
 
-<XPageTitle Name="Teacher Onboarding" />
+<XPageTitle Name="Teacher Profile" />
 
 <TeacherOnboardingForm OnSubmit="HandleTeacherSubmit"
                        Error="@_apiError"
                        IsSubmitting="@_isSubmitting" />
 
 @code {
-    [CascadingParameter]
-    private HttpContext? HttpContext { get; set; }
-
     private ApiError? _apiError;
     private bool _isSubmitting;
 
     protected override async Task OnInitializedAsync()
     {
-        if (OnboardingRoute.ShouldSkipGuard(HttpContext))
-        {
-            return;
-        }
-
         var statusResult = await OnboardingApi.GetStatusAsync();
         if (statusResult.IsSuccess && statusResult.Value is not null)
         {
             var redirect = OnboardingRoute.GetGuardRedirect(statusResult.Value, AppRoutes.OnboardingTeacher);
             if (redirect is not null)
             {
-                Navigation.NavigateTo(redirect);
+                Navigation.NavigateTo(redirect, forceLoad: true);
             }
         }
     }
@@ -64,11 +58,8 @@
             return;
         }
 
-        if (HttpContext is not null)
-        {
-            await AuthService.RefreshPrincipalAsync(HttpContext);
-        }
-
-        Navigation.NavigateTo(AppRoutes.OnboardingStatus);
+        // RefreshPrincipalAsync uses IHttpContextAccessor fallback, no HttpContext needed
+        await AuthService.RefreshPrincipalAsync();
+        Navigation.NavigateTo(AppRoutes.OnboardingStatus, forceLoad: true);
     }
 }
